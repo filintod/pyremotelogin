@@ -1,0 +1,7 @@
+include MANIFEST.in
+include LICENSE
+include RELEASE.md
+include README.md
+include setup.py
+include remotelogin/sample_settings.yaml
+include remotelogin/connections/service-names-port-numbers.csv

@@ -1,0 +1,2 @@
+class DatabaseNotDefinedException(Exception):
+    pass

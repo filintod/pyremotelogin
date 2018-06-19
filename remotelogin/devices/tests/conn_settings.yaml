@@ -1,0 +1,38 @@
+---
+# example of deviceconn file
+
+db:
+   vendor: 'sqllite'
+   host: ''
+   port: ''
+   #service_name:
+   db: 'c:\Users\duran\p3ml\remotelogin\remotelogin\devices\tests\testdb.db'
+
+connections: {}
+  # from deviceconn.connections.settings
+  #SOCKET_TIMEOUT: 30
+  #SOCKET_TIMEOUT_FOR_LOGIN: 0.5
+  #SOCKET_TIMEOUT_FOR_LOGIN_TELNET: .5
+  #SOCKET_KEEPALIVE_PERIOD: 0
+  #TIMEOUT_FOR_PROMPT
+  #BUFFER_SIZE: 4096          # socket buffer size
+  #SOCKET_TIME_SLEEP_SELECT: 0.5
+  #CONNECTION_LOCAL_TIMEOUT: 0.1
+  #CONNECTION_LOGIN_LOCAL_TIMEOUT: 0.25
+  #TIMEOUT_FOR_EXEC_OUTPUT: 0.5
+  #TIMEOUT_FOR_EXPECT: 0      # time to wait for the whole expected list to complete
+  #SHELL_COLS: 16000            # interactive shell width
+  #SHELL_ROWS:  3000         # interactive shell height
+  #IANA_CSV_FILE: os.path.join(os.path.split(os.path.abspath(__file__))[0], 'service-names-port-numbers.csv')
+  #KEEP_CONNECTIONS_DB: True
+  #HIDDEN_DATA_MSG: 'PROTECTED/HIDDEN DATA'
+
+
+devices: {}
+    # from deviceconn.devices.settings
+    # DEFAULT_DOWNLOAD_FOLDER: 'c:\Users\my user'
+
+
+vault:
+  password_file: encrypt_password_file
+
