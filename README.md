@@ -56,8 +56,6 @@ with multihop.open() as conn:
 
 ```
 
-#### [More examples of SSH and Telnet connection usage here](docs/SshConnection_and_TelnetConnection_cheat_sheets.md)
-
 ------
 
 ## remotelogin.devices
