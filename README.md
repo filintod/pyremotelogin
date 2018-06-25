@@ -72,4 +72,5 @@ and several others that I frequently used.  They are not all needed for
 the remotelogin package but I usually keep them together for my own benefit.
 
 The tools in this package can be used by itself usually,
-and they are actually use by the connections and devices packages.
+and they are actually use by the connections and devices packages. I might
+move them out to their own repo in the future.
