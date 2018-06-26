@@ -15,16 +15,16 @@ cli_settings = {}
 def parse_config(default_config_path=None, environment_var=None, environment_settings_config=False,
                  load_test_envi_key_as_environment=True):
     """ loads yaml config file and return dictionary with parameters parsed.
-        If config data has a key called "test_envi" and load_test_envi_key_as_environment is True
-        then we will also update test_envi global environment_settings data
+        If config data has a key called "run_envi" and load_test_envi_key_as_environment is True
+        then we will also update run_envi global environment_settings data
 
     Args:
         environment_var (str): environment variable name to use as path to config file to substitute default. This
                                takes precedence over default_config_path
         default_config_path (str): filepath of default settings file. it should be located on same folder as
                                         module __file__ calling this function
-        environment_settings_config (bool): flag to indicate that this data is to set the default test_envi configuration
-        load_test_envi_key_as_environment (bool): flag to indicate that if test_envi is found set it as global environment
+        environment_settings_config (bool): flag to indicate that this data is to set the default run_envi configuration
+        load_test_envi_key_as_environment (bool): flag to indicate that if run_envi is found set it as global environment
                                                   variable environment_settings
 
     Returns:
@@ -63,8 +63,8 @@ def parse_config(default_config_path=None, environment_var=None, environment_set
         environment_settings.update(new_environment_settings)
         ret = environment_settings
     else:
-        if 'test_envi' in new_environment_settings and load_test_envi_key_as_environment:
-            environment_settings.update(new_environment_settings.pop('test_envi'))
+        if 'run_envi' in new_environment_settings and load_test_envi_key_as_environment:
+            environment_settings.update(new_environment_settings.pop('run_envi'))
         ret = new_environment_settings
 
     for section, values in registered_settings.items():
@@ -101,7 +101,7 @@ def load_default():
 
 
 def update_settings_with_user_settings(local_vars, section, settings=None, paths_vars=()):
-    """ updates test_envi default settings with environment settings given by user
+    """ updates run_envi default settings with environment settings given by user
         the keys are case independent to allow the settings file to be written as lower case but still set the proper
         key in the settings.py file that is calling this method
 

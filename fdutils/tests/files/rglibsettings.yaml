@@ -27,7 +27,7 @@ soap_keys:
   # if we don't provide password_file or password_script we expect keyfile to not be encrypted
   password_file: '{{ ROOT_FOLDER }}\rglib\soap_key_password'
 
-  # we can also use a script to obtain the password by passing the path to password_script similar to test_envi vault
+  # we can also use a script to obtain the password by passing the path to password_script similar to run_envi vault
   # password_script: ''
 
 deviceconn:
@@ -38,7 +38,7 @@ deviceconn:
 
 
   connections: {}
-    # from test_envi.connections.settings
+    # from run_envi.connections.settings
     #SOCKET_TIMEOUT: 30
     #SOCKET_TIMEOUT_FOR_LOGIN: 8
     #SOCKET_TIMEOUT_FOR_LOGIN_TELNET: 8
@@ -57,7 +57,7 @@ deviceconn:
     #HIDDEN_DATA_MSG: 'PROTECTED/HIDDEN DATA'
 
 
-test_envi:
+run_envi:
 
   selenium:
     # where are the executables in your computer for webdrivers for chrome/firefox/etc
