@@ -19,7 +19,6 @@ except IOError:
 requires = ['pyyaml',
             'paramiko',
             'scp',
-            'cryptography',
             'sqlalchemy']
 
 package_data={'': ['MANIFEST.in','README.md'],

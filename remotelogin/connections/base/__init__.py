@@ -20,7 +20,7 @@ class Connection:
     ARGUMENTS_ALLOWED = 'buffer_size', 'connect_timeout'
     NON_BLOCKING_JOIN_TIMEOUT = settings.NON_BLOCKING_JOIN_TIMEOUT       # 5 seconds
 
-    def __init__(self, timeout=0, connect_timeout=0, unbuffered_stream=False):
+    def __init__(self, timeout=0, connect_timeout=0, unbuffered_stream=False, remove_empty_on_stream=False):
 
         # session information
         self._timeout = timeout or settings.SOCKET_TIMEOUT
@@ -31,6 +31,7 @@ class Connection:
         self._transport = None
         self._is_open = False
         self._unbuffered = unbuffered_stream
+        self._remove_empty_on_stream = remove_empty_on_stream
 
         # threading locks/events
         self.lock = None
@@ -101,16 +102,16 @@ class Connection:
         if self.is_open:
             log.debug('Connection {} Already Opened: '.format(self))
         else:
-            self.__init_open_connection__(kwargs.pop('unbuffered', self._unbuffered))
+            self.__init_open_connection__(kwargs.pop('unbuffered', self._unbuffered), self._remove_empty_on_stream)
             self._open_transport(**kwargs)
             self._is_open = True
 
         return self
 
-    def __init_open_connection__(self, unbuffered):
+    def __init_open_connection__(self, unbuffered, remove_empty_on_stream):
         self.lock = threading.Lock()
         self.stop_signal = threading.Event()
-        self.data = DataExchange(unbuffered)
+        self.data = DataExchange(unbuffered, remove_empty_on_stream)
 
     def __enter__(self):
         return self.open()

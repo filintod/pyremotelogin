@@ -45,7 +45,7 @@ control_list = [v.split(maxsplit=1)[1] for v in control.splitlines()]
 
 class DataExchange:
 
-    def __init__(self, unbuffered=False):
+    def __init__(self, unbuffered=False, remove_empty_on_stream=False):
         self._data_sent_timer_meta = []
         self._data_sent = []
         self._data_recv = []
@@ -53,6 +53,7 @@ class DataExchange:
         self._duplicate_on = False
         self._new_received = self.new_received
         self._unbuffered = unbuffered
+        self._remove_empty_on_stream = remove_empty_on_stream
 
     def _write(self, stream, data, force=False):
         if self._recording or force:
@@ -68,7 +69,7 @@ class DataExchange:
             self._stream_is_text = False
             self.new_received = self._new_received
 
-            if data_stream and data:
+            if data_stream and data and (not self._remove_empty_on_stream or data.rstrip()):
 
                 if isinstance(data_stream, io.TextIOBase):  # checks for StringIO and Text Files
                     stream_is_text = True

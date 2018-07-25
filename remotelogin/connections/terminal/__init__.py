@@ -139,7 +139,7 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
                  check_same_prompt_when_opening_terminal=True, data_stream=None, use_unique_prompt=True, rtt=0.5,
                  enable_proxyjump=True, allow_passwords_unencrypted=False, chain_all_expects=False,
                  encoding_type=None, encoding_errors=None, decoding_type=None, decoding_errors=None,
-                 unbuffered_stream=False, **shell_kwargs):
+                 unbuffered_stream=False, remove_empty_on_stream=False, **shell_kwargs):
         """
 
         Args:
@@ -170,7 +170,8 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
         self._terminals = []  # hackish - dummy shell object to get pass the super init
         self.__base_chan_kwargs = shell_kwargs
-        super(TerminalConnection, self).__init__(unbuffered_stream=unbuffered_stream)
+        super(TerminalConnection, self).__init__(unbuffered_stream=unbuffered_stream,
+                                                 remove_empty_on_stream=remove_empty_on_stream)
 
         self.check_same_prompt_when_opening_terminal = check_same_prompt_when_opening_terminal
         self.connections = list(connections)
