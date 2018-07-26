@@ -27,7 +27,7 @@ class CanExecuteCommands:
                     cmd += ' 2>' + err_file
 
         if use_sudo:
-            if not re.match('^\s*sudo .+', cmd):
+            if 'sudo ' not in cmd:
                 cmd = self.os.sudo + ' ' + cmd
 
         return cmd
