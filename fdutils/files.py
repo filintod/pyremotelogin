@@ -387,7 +387,7 @@ def are_objects_the_same(a, b, attrib=None):
     return True
 
 
-def cmd_output_split_parser(out, columns=(), starts_at=0, stops_at=0, split_re='\s+', column_info_at=-1,
+def cmd_output_split_parser(out, columns=(), starts_at=0, stops_at=0, split_re=r'\s+', column_info_at=-1,
                             start_after_columns_line=False):
     """  Function to parse the output from a command in a shell
 
@@ -408,7 +408,7 @@ def cmd_output_split_parser(out, columns=(), starts_at=0, stops_at=0, split_re='
                 return
             ret[key][c] = values[i]
 
-    continuation = re.compile('^\s{4,}')
+    continuation = re.compile(r'^\s{4,}')
     ret = collections.OrderedDict()
     last = ''
     split_number = len(columns) - 1

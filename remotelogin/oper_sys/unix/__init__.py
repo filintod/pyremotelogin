@@ -18,7 +18,7 @@ class UnixOS(base.OSBase):
     dev_null = '/dev/null'
     temp = '/tmp'
     ssh_app = "ssh"
-    shell_app = "/bin/sh -i"
+    shell_app = "/bin/bash -i"
     sudo = 'sudo'
     name = 'unix'
 
@@ -40,7 +40,7 @@ class UnixOS(base.OSBase):
             # bad hostname (couldnot resolve)
             raise Exception('Bad host ' + o[-1])
 
-        lost_re = re.compile('^(?P<sent>\d+)[\w\s]+,\s+(?P<receive>\d+)[\w\s]+,\s+(?P<lost>\d+)')
+        lost_re = re.compile(r'^(?P<sent>\d+)[\w\s]+,\s+(?P<receive>\d+)[\w\s]+,\s+(?P<lost>\d+)')
         m = lost_re.match(o[-1])
         rtt = ()
         if lost_re.match(o[-1]):
@@ -112,7 +112,7 @@ class UnixOS(base.OSBase):
             for sudo_cmd in sudo_cmds:
                 if start_sudo:
                     sudo_cmd = sudo_cmd.strip()
-                    if re.match('\([^\)]+\) ALL', sudo_cmd):
+                    if re.match(r'\([^\)]+\) ALL', sudo_cmd):
                         self._channels[-1].sudo_list = ['ALL']
                         return True
                     self._channels[-1].sudo_list.append(sudo_cmd.split(' ')[2])
@@ -158,7 +158,7 @@ class UnixOS(base.OSBase):
         hours_min = hours_min.split(':') if ':' in hours_min else [0, hours_min]
         return int(days), int(hours_min[0]), int(hours_min[1])
 
-    def tcp_get_connections_from_list(self, netstat_cmd, netstat_listen_cmd, sep, all_interfaces='\*', conn=None):
+    def tcp_get_connections_from_list(self, netstat_cmd, netstat_listen_cmd, sep, all_interfaces=r'\*', conn=None):
         """ Convert return list of tcp connection pairs from the netstat command. The list would look like:
 
         10.10.13.35:22 10.10.13.24:17520 on linux (sep=:)
@@ -193,7 +193,7 @@ class UnixOS(base.OSBase):
         return connections
 
     def get_all_my_current_inet_addresses(self, conn=None):
-        inet, err = self.send_command("ifconfig -a|grep 'inet '|awk '!/(127\.0\.0\.1|::1)/ {print $2}'")
+        inet, err = self.send_command(r"ifconfig -a|grep 'inet '|awk '!/(127\.0\.0\.1|::1)/ {print $2}'")
         addresses = []
         if inet:
             for addr in inet:

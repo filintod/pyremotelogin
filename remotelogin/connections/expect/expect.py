@@ -251,7 +251,7 @@ class Expect:
         :rtype: bool
 
         """
-        prompt_found_at_end = re.search(prompt + "\s*$", buff, re.MULTILINE)
+        prompt_found_at_end = re.search(prompt + r"\s*$", buff, re.MULTILINE)
 
         self.all_matched = False
         for expect_index, expect_value in enumerate(self.expect_values):

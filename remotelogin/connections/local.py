@@ -60,7 +60,8 @@ if not ON_WINDOWS:
     enqueue_output = enqueue_output_unix
 
     def set_non_blocking(fd):
-        fcntl.fcntl(fd, fcntl.F_SETFL, fcntl.fcntl(fd, fcntl.F_GETFL) | os.O_NONBLOCK)
+        if fd:
+            fcntl.fcntl(fd, fcntl.F_SETFL, fcntl.fcntl(fd, fcntl.F_GETFL) | os.O_NONBLOCK)
 
 else:
     enqueue_output = enqueue_output_win

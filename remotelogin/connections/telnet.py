@@ -64,7 +64,7 @@ class TelnetConnectionUnwrapped(term.IPConnectionWithTerminal):
             self._get_login_prompt(client)
 
         if self.password:
-            m = client.expect([re.compile(b"password:\s*", flags=re.I)], self.connect_timeout)
+            m = client.expect([re.compile(br"password:\s*", flags=re.I)], self.connect_timeout)
             if m[1]:
                 client.write((self.password + "\n").encode('ascii'))
             else:
@@ -77,7 +77,7 @@ class TelnetConnectionUnwrapped(term.IPConnectionWithTerminal):
 
     @retry(2, 5)
     def _get_login_prompt(self, client):
-        m = client.expect([re.compile(b'(username|login)(\s\w*)*:', flags=re.I)],
+        m = client.expect([re.compile(br'(username|login)(\s\w*)*:', flags=re.I)],
                           self.connect_timeout)
         if m[1]:
             client.write((self.username + "\n").encode('ascii'))

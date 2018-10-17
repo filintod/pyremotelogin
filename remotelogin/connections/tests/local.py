@@ -3,15 +3,28 @@ import time
 
 from remotelogin.connections.ssh import SshConnection
 
-local = local.LocalConnection(with_shell=True, os='windows')
+local = local.LocalConnection(with_shell=True)
 print(local)
+
+
+def test_private_key_encrypted(self):
+    ssh = SshConnection(host='github-libvirt2.r1.01a.as1.gaikai.org', username='fduran',
+                        key_filename='/home/fduran/.ssh/id_crt', key_password='6wt5sEQ5LL8b',
+                        key_public='/home/fduran/.ssh/id_rsa.pub')
+    # ssh = SshConnection(host='esq1.r2.03.snaa.gaikai.org', username='fduran',
+    #                     key_filename='/home/fduran/.ssh/id_crt_priv_clear')
+
+    ssh.open()
+    # SHA256:IowKDSEO7s+Ab0Oai2Iw0mzbL0rXRCev5seYo/nImMk
+    # SHA256:IowKDSEO7s+Ab0Oai2Iw0mzbL0rXRCev5seYo/nImMk
+
+
 with local.open() as l:
-    print(l.check_output('dir\n'))
-    th = l.check_output_nb('dir\n')
-    time.sleep(1)
-    print(th.get_all_data())
+    print(l.check_output('ls -l'))
+
 
 print("after...")
+exit()
 to = [time.time()]
 import re
 local.expected_prompt=re.compile(r'C:\\.+\\tests>')

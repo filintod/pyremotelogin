@@ -21,8 +21,8 @@ class CanExecuteCommands:
 
             if not cmd.find(' 2>') != -1 and stderr_to_tmp:
                 # set stderr to the file. first check there is no & (nonblock run) at end of cmd
-                if re.search('\s&\s*$', cmd):
-                    cmd = re.sub('\s&\s*$', ' 2>{} & '.format(err_file), cmd)
+                if re.search(r'\s&\s*$', cmd):
+                    cmd = re.sub(r'\s&\s*$', ' 2>{} & '.format(err_file), cmd)
                 else:
                     cmd += ' 2>' + err_file
 

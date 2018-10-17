@@ -21,10 +21,10 @@ class LinuxOS(unix.UnixOS):
 
     def get_tcp_connection_pairs(self, state='ESTABLISHED', filtered_by=None, conn=None, std_err_to_null=False):
         filterby = "grep '%s'|" % filtered_by if filtered_by else ''
-        netstat_cmd = "{}|grep {}|{} awk '!/(127\.0\.0\.1|::1|netstat)/ {{print $4,$5}}'" \
+        netstat_cmd = r"{}|grep {}|{} awk '!/(127\.0\.0\.1|::1|netstat)/ {{print $4,$5}}'" \
                       "".format(self.cmd_netstat('tcp', as_text=True, std_err_to_null=std_err_to_null), state, filterby)
         # TODO: IPv6 address need to be better tune as ::1 might be part of another address not the loopback
-        netstat_listen_cmd = "{}|grep LISTEN|awk '!/(127\.0\.0\.1|::1|netstat)/ {{print $4}}'" \
+        netstat_listen_cmd = r"{}|grep LISTEN|awk '!/(127\.0\.0\.1|::1|netstat)/ {{print $4}}'" \
                              "".format(self.cmd_netstat('tcp', as_text=True, std_err_to_null=std_err_to_null))
         return self.tcp_get_connections_from_list(netstat_cmd, netstat_listen_cmd, sep=':',
                                                   all_interfaces=r'(0\.0\.0\.0|::)', conn=conn)

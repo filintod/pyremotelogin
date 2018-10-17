@@ -121,7 +121,7 @@ class WindowsOS(base.OSBase):
     def __init__(self, can_change_prompt=True):
         super(WindowsOS, self).__init__(can_change_prompt=can_change_prompt)
         self.ssh_app = self._get_ssh_app()
-        self.shell_app = os.environ.get('CSIDL_SYSTEM', r'c:\Windows\System32')  + '\cmd.exe'
+        self.shell_app = os.environ.get('CSIDL_SYSTEM', r'c:\Windows\System32') + r'\cmd.exe'
 
     @property
     def path(self):
@@ -221,7 +221,7 @@ def neighbors_parse(ipv6=False, interface=""):
                 result[current_element] = dict()
             else:
                 if not row.startswith('Internet') and not row.startswith('----'):
-                    entry = re.split('\s+', row, 2)
+                    entry = re.split(r'\s+', row, 2)
                     if len(entry) == 3:
                         ip, mac, entry_type = entry
                     else:

@@ -48,10 +48,9 @@ class OSCommands:
         pass
 
 
-def set_locals(klass, locs, check_presence=True):
-    for l in locs:
-        if l is not None and (not check_presence or hasattr(klass, l)):
-            setattr(klass, l, locs[l])
+def set_locals(klass, locs):
+    for l in [l for l in locs if not hasattr(klass, l)]:
+        setattr(klass, l, locs[l])
 
 
 class OSBase:

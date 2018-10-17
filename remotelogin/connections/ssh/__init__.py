@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 def get_ask_resp_list_for_new_connection(password, prompt=None):
     return [term.ExpectPasswordAndResponse(password),
+            term.ExpectPasswordAndResponse(password, expect=r'passphrase for key'),  # for ssh-agent
             term.ExpectAndResponse(r'are you sure you want to continue .+', 'yes', name='unknown_key'),
             term.ExpectPrompt(prompt, required=bool(prompt))]
 
@@ -41,16 +42,16 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
 
     _IANA_SVC_NAME = 'ssh'
     AUTHENTICATION_KEYS = term.IPConnectionWithTerminal.AUTHENTICATION_KEYS + \
-                                 ('key_filename', 'key_password')
+                                 ('key_filename', 'key_password', 'key_cert')
     AUTHENTICATION_KEYS_COMBINATIONS = (('username', 'password'),
                                         ('username', 'key_filename'))
     ARGUMENTS_ALLOWED = term.IPConnectionWithTerminal.ARGUMENTS_ALLOWED + \
                         ('key_filename', 'key_password', 'allow_unknown_keys', 'ssh_app', 'file_transfer_protocol',
-                         'proxy_jump')
+                         'proxy_jump', 'key_cert', 'use_agent')
 
     def __init__(self, host='', key_filename=None, allow_unknown_keys=True, ssh_app=None, key_password=None,
-                 keep_alive_period=0, file_transfer_protocol='sftp', ssh_app_kwargs=None, proxy_jump=None,
-                 **kwargs):
+                 key_cert=None, keep_alive_period=0, file_transfer_protocol='sftp', ssh_app_kwargs=None,
+                 proxy_jump=None, use_agent=False, **kwargs):
 
         self.file_transfer_protocol = file_transfer_protocol
         if self.file_transfer_protocol not in ('sftp', 'scp'):
@@ -61,6 +62,8 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
 
         self.key_filename = key_filename
         self.key_password = key_password
+        self.key_cert = key_cert # for ssh signed public keys
+        self.use_agent = use_agent
         self._paramiko_key_policy = None
         self._allow_unknown_keys = None
         self.allow_unknown_keys = allow_unknown_keys
@@ -115,7 +118,8 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
     def _set_default_credentials_all(self, kwargs, defaults):
 
         if self.key_filename:
-            defaults['key_filename'] = self.key_filename
+            if not defaults.get('pkey'):
+                defaults['key_filename'] = self.key_filename
         else:
             defaults['password'] = self.password
 
@@ -142,23 +146,36 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
 
         self._set_default_credentials_all(kwargs, defaults)
 
-    def _set_default_credentials(self, kwargs):
+    def _try_cryptography_direct_pkey(self, filepath, filekey):
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import serialization
+        with open(filepath, "rb") as key_file:
+            return serialization.load_pem_private_key(key_file.read(), password=filekey.encode(),
+                                                      backend=default_backend())
 
+    def _set_default_credentials(self, kwargs):
         self._transport.set_missing_host_key_policy(self.key_policy)
         defaults = {}
 
         if not self.key_filename:
             defaults['allow_agent'] = False
-            defaults['look_for_keys'] =  False
+            defaults['look_for_keys'] = False
 
         else:
             try:
                 defaults['pkey'] = paramiko.RSAKey.from_private_key_file(self.key_filename, password=self.key_password)
 
             except paramiko.ssh_exception.SSHException:
-                log.exception('problems with key')
-                raise BadSshKeyPasswordError('Your password might be wrong for this key file ({})'
-                                             ''.format(self.key_filename))
+                if self.key_password:
+                    try:
+                        defaults['pkey'] = paramiko.RSAKey(key=self._try_cryptography_direct_pkey(self.key_filename,
+                                                                                                  self.key_password))
+                    except Exception:
+                        log.exception('problems with key or file type')
+                        raise BadSshKeyPasswordError('Your password might be wrong for this key file ({})'
+                                                     ''.format(self.key_filename))
+            if self.key_cert:
+                defaults['pkey'].load_certificate(self.key_cert)
 
         self._set_default_credentials_all(kwargs, defaults)
 
@@ -335,16 +352,19 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
 
         username = kwargs.pop('username', self.username)
         password = kwargs.pop('password', self.password)
+        use_agent = kwargs.pop('use_agent', self.use_agent)
         port = kwargs.pop('port', self.port)
         key_filename = kwargs.pop('key_filename', '')
         options = kwargs.pop('options', '')
         ssh_app = self.ssh_app if parent is None else parent.os.ssh_app
 
         key_file = ('-i ' + key_filename) if key_filename else ''
-        if self.key_password:
-            raise NotImplementedError('SSH Key Password has not been Implemented yet. You can use ssh-agent to '
+        if self.key_password and not self.use_agent:
+            raise NotImplementedError('SSH Key Password has not been Implemented yet. You can use ssh-agent (use_agent=True) to '
                                       'keep your key password on the server as an interim solution.')
-        if not key_filename:
+        use_agent = '-A' if use_agent else ''
+
+        if not key_filename and not use_agent:
             ask_response_list = get_ask_resp_list_for_new_connection(password,
                                                                      kwargs.get('expected_prompt',
                                                                                 self.expected_prompt))
@@ -357,7 +377,7 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
             raise ConnectionError('This os ({}) does not have a terminal ssh application available.\n'
                                   'You can also provide one when instantiating by passing the value '
                                   'in the parameter ssh_app'.format(self.os.__name__))
-        tty = kwargs.pop('tty', '')
+        tty = kwargs.pop('tty', '-tt')
         shell = channel.TerminalShell(self, **kwargs)
 
         # ssh_app.create_connection_string(port=port, username=username, key_filename=key_filename,
@@ -369,9 +389,9 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         else:
             port_arg = '-p'
 
-        conn_string = '"{ssh}" {port_arg} {port} {key_file} {options} -l {user} {tty} {host}'.format(
+        conn_string = '"{ssh}" {port_arg} {port} {key_file} {use_agent} {options} -l {user} {tty} {host}'.format(
             ssh=ssh_app, key_file=key_file, user=username, host=self.host, port=port, options=options,
-            port_arg=port_arg, tty=tty)
+            port_arg=port_arg, tty=tty, use_agent=use_agent)
 
         return shell, conn_string
 
