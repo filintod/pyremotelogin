@@ -444,9 +444,9 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
     def __get_last_line_prompt(self, data_received_lines):
         last_line = data_received_lines.pop()
-        len_last_line_split = len(last_line.split())
-        if len_last_line_split >= 2:
-            last_line = last_line.split(maxsplit=len_last_line_split - 1)[-1]
+        #len_last_line_split = len(last_line.split())
+        # if len_last_line_split >= 2:
+        #     last_line = last_line.split(maxsplit=len_last_line_split - 1)[-1]
         return last_line
         
     def _get_banner_and_prompt(self, terminal, previous_prompt=None):
