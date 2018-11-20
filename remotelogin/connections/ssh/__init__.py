@@ -5,16 +5,13 @@ import time
 
 import paramiko
 import scp
-from paramiko import SFTPClient
-
-import remotelogin.connections.constants
 import fdutils
+from paramiko import SFTPClient
+from remotelogin.connections import base, exceptions, settings
+from remotelogin.connections.base import term, mixins
+import remotelogin.connections.constants
 from remotelogin.connections.exceptions import BadSshKeyPasswordError, NoDefaultUserError
-from .. import base
-from .. import exceptions
-from .. import settings
-from ..base import term, mixins
-from ..terminal import channel, terminal_connection_wrapper
+from remotelogin.connections.terminal import channel, terminal_connection_wrapper
 
 log = logging.getLogger(__name__)
 
@@ -162,20 +159,34 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
             defaults['look_for_keys'] = False
 
         else:
+            password = self.key_password or self.password
             try:
-                defaults['pkey'] = paramiko.RSAKey.from_private_key_file(self.key_filename, password=self.key_password)
+                defaults['pkey'] = paramiko.RSAKey.from_private_key_file(self.key_filename, password=password)
 
             except paramiko.ssh_exception.SSHException:
                 if self.key_password:
                     try:
                         defaults['pkey'] = paramiko.RSAKey(key=self._try_cryptography_direct_pkey(self.key_filename,
-                                                                                                  self.key_password))
+                                                                                                  password))
                     except Exception:
                         log.exception('problems with key or file type')
                         raise BadSshKeyPasswordError('Your password might be wrong for this key file ({})'
                                                      ''.format(self.key_filename))
+
             if self.key_cert:
-                defaults['pkey'].load_certificate(self.key_cert)
+                try:
+                    defaults['pkey'].load_certificate(self.key_cert)
+                except Exception:
+                    # hack to work around paramiko lack of support for openssl signed public key
+                    #   until I submit a pr on paramiko
+                    with open(self.key_cert) as f:
+                        ptype, blob = f.read().split(None, 2)
+                        if ptype.endswith("@openssh.com"):
+                            raise
+
+                        from paramiko import message, pkey
+                        from base64 import decodebytes
+                        defaults['pkey'].public_blob = pkey.PublicBlob(ptype, decodebytes(blob.encode()))
 
         self._set_default_credentials_all(kwargs, defaults)
 

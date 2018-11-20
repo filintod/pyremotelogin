@@ -10,34 +10,35 @@ import time
 
 import fdutils.timer
 from remotelogin.connections.exceptions import ConnectionExpectTimeoutError
-from ..base import term
+from remotelogin.connections.base import term, mixins
 
 from remotelogin.connections import constants, decorators
 
 from io import StringIO
 
-from . import shells
-from .. import settings, expect, exceptions, base
-from ..base import mixins
+from remotelogin.connections.terminal import shells
+from remotelogin.connections import settings, expect, exceptions, base
 import fdutils
 
 log = logging.getLogger(__name__)
 
 
-__author__ = 'Filinto Duran (duranto@gmail.com)'
+__author__ = "Filinto Duran (duranto@gmail.com)"
 
 
-PASSWORD_PROMPT_REGEX = r'(?i)password[^:]*:'
-SUDO_PASSWORD_PROMPT_REGEX = r'(?i)\[sudo\]\s*password for [\w\d]+\s*:'
+PASSWORD_PROMPT_REGEX = r"(?i)password[^:]*:"
+SUDO_PASSWORD_PROMPT_REGEX = r"(?i).*Password[^:]*:\s*"
 
 
-def _remove_cmd_from_buffer(buff, cmd_line_counter, cmd_lines, cmd_lines_num, cmd_removed):
+def _remove_cmd_from_buffer(
+    buff, cmd_line_counter, cmd_lines, cmd_lines_num, cmd_removed
+):
     """ helper function for _expect_cmd """
     for cmd_line in cmd_lines[cmd_line_counter:]:
         command_at = buff.find(cmd_line)
         if command_at != -1:
             cmd_line_counter += 1
-            buff = buff[command_at + len(cmd_line):]
+            buff = buff[command_at + len(cmd_line) :]
             if cmd_line_counter == cmd_lines_num:
                 cmd_removed = True
 
@@ -48,17 +49,17 @@ def _get_string_to_match(buff, _check_match):
     string_to_match = buff
 
     # we are limiting the comparison to sections between the reset_on_sep char value (like new line)
-    nl_index = buff.find('\n')
+    nl_index = buff.find("\n")
     # if we find a separator string/char
     while nl_index != -1:
         string_to_match = buff[:nl_index]
         # buff is initialized with the section after the reset_on_sep char for comparison
-        buff = buff[nl_index + 1:]
+        buff = buff[nl_index + 1 :]
         # compare against our expected values
         if _check_match(string_to_match):
             break
 
-        nl_index = buff.find('\n')
+        nl_index = buff.find("\n")
     else:  # nobreak
         return string_to_match, buff, False
 
@@ -84,12 +85,15 @@ def get_ask_resp_list_by_name(ask_response_list):
     ask_resp_list_by_name = {}
 
     for i, ask_resp in enumerate(ask_response_list):
-        if isinstance(ask_resp, str) and ask_resp.lower().strip() == term.DEFAULT_PROMPT_NAME:
+        if (
+            isinstance(ask_resp, str)
+            and ask_resp.lower().strip() == term.DEFAULT_PROMPT_NAME
+        ):
             ask_resp_list_by_name[term.DEFAULT_PROMPT_NAME] = term.ExpectPrompt()
         else:
-            ask_resp['index'] = i
-            if ask_resp.get('name', None):
-                ask_resp_list_by_name[str(ask_resp['name'])] = ask_resp
+            ask_resp["index"] = i
+            if ask_resp.get("name", None):
+                ask_resp_list_by_name[str(ask_resp["name"])] = ask_resp
             else:
                 no_names.append(i)
 
@@ -109,37 +113,60 @@ def create_expectedregex_objects(ask_response_list, kwargs, remove_prompt_to_com
 
     ask_resp_list_by_name = get_ask_resp_list_by_name(ask_response_list)
 
-    expect_list ={}
+    expect_list = {}
 
-    flags = kwargs.pop('flags', 0)
+    flags = kwargs.pop("flags", 0)
     for name, r in ask_resp_list_by_name.items():
         if isinstance(r, collections.MutableMapping):
-            if r.get('name', None) is None:
-                r['name'] = name
+            if r.get("name", None) is None:
+                r["name"] = name
             r = term.ExpectAndResponse.from_dict(**r)
             ask_resp_list_by_name[name] = r
 
         else:
             r = r.clone()
 
-        expect_list[name] = expect.ExpectedRegex(r.expect, name=name, flags=r.flags or flags,
-                                                 remove_prompt_to_compare=remove_prompt_to_compare)
+        expect_list[name] = expect.ExpectedRegex(
+            r.expect,
+            name=name,
+            flags=r.flags or flags,
+            remove_prompt_to_compare=remove_prompt_to_compare,
+        )
 
     return expect_list, ask_resp_list_by_name
+
 
 # TODO: implement __str__ to show tunnel connections
 # TODO: implement not allowing password unencrypted unless flag set to True
 # TODO: check if base connection was open before we first try to open it so we don't close it at __exit__
 # TODO: implement setting encoding/decoding type instead of using only settings values
 # TODO: implement rtt attribute into delay
-class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanTransferFiles):
+class TerminalConnection(
+    base.Connection, mixins.CanExecuteCommands, mixins.CanTransferFiles
+):
     """ utility class to handle interactive connections with expect-like functionality and login tracking """
 
-    def __init__(self, *connections, close_base_on_exit=True, allow_non_expected_prompt=False, stderr_to_tmp=False,
-                 check_same_prompt_when_opening_terminal=True, data_stream=None, use_unique_prompt=True, rtt=0.5,
-                 enable_proxyjump=True, allow_passwords_unencrypted=False, chain_all_expects=False,
-                 encoding_type=None, encoding_errors=None, decoding_type=None, decoding_errors=None,
-                 unbuffered_stream=False, remove_empty_on_stream=False, **shell_kwargs):
+    def __init__(
+        self,
+        *connections,
+        close_base_on_exit=True,
+        allow_non_expected_prompt=False,
+        stderr_to_tmp=False,
+        check_same_prompt_when_opening_terminal=True,
+        data_stream=None,
+        use_unique_prompt=True,
+        rtt=0.5,
+        enable_proxyjump=True,
+        allow_passwords_unencrypted=False,
+        chain_all_expects=False,
+        encoding_type=None,
+        encoding_errors=None,
+        decoding_type=None,
+        decoding_errors=None,
+        unbuffered_stream=False,
+        remove_empty_on_stream=False,
+        **shell_kwargs
+    ):
         """
 
         Args:
@@ -170,10 +197,14 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
         self._terminals = []  # hackish - dummy shell object to get pass the super init
         self.__base_chan_kwargs = shell_kwargs
-        super(TerminalConnection, self).__init__(unbuffered_stream=unbuffered_stream,
-                                                 remove_empty_on_stream=remove_empty_on_stream)
+        super(TerminalConnection, self).__init__(
+            unbuffered_stream=unbuffered_stream,
+            remove_empty_on_stream=remove_empty_on_stream,
+        )
 
-        self.check_same_prompt_when_opening_terminal = check_same_prompt_when_opening_terminal
+        self.check_same_prompt_when_opening_terminal = (
+            check_same_prompt_when_opening_terminal
+        )
         self.connections = list(connections)
         self._close_base_on_exit = close_base_on_exit
         self.use_unique_prompt = use_unique_prompt
@@ -190,7 +221,7 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         self.data_stream = data_stream
 
         # last command sent
-        self.last_cmd_sent = ''
+        self.last_cmd_sent = ""
         self._encoding_type = encoding_type or settings.ENCODE_ENCODING_TYPE
         self._encoding_errors = encoding_errors or settings.ENCODE_ERROR_ARGUMENT_VALUE
         self._decoding_type = decoding_type or settings.DECODE_ENCODING_TYPE
@@ -209,19 +240,28 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         for c in self.connections:
             base_conn.append(c.__repr__())
 
-        return ("TerminalConnection({base_conn}, close_base_on_exit={close_on_exit}, "
-                "allow_unknown_prompt={allow_prompt}, stderr_to_tmp={stderr}, enable_proxyjump={enable_proxyjump}, "
-                "use_unique_prompt={use_unique_prompt}),"
-                "allow_password_unencrypted={allow_password_unencrypted}"
-                "".format(base_conn=base_conn, close_on_exit=self._close_base_on_exit,
-                          allow_prompt=self.allow_non_expected_prompt, stderr=self.stderr_to_tmp,
-                          use_unique_prompt=self.use_unique_prompt, enable_proxyjump=self.enable_proxyjump,
-                          allow_password_unencrypted=self.allow_password_unencrypted))
+        return (
+            "TerminalConnection({base_conn}, close_base_on_exit={close_on_exit}, "
+            "allow_unknown_prompt={allow_prompt}, stderr_to_tmp={stderr}, enable_proxyjump={enable_proxyjump}, "
+            "use_unique_prompt={use_unique_prompt}),"
+            "allow_password_unencrypted={allow_password_unencrypted}"
+            "".format(
+                base_conn=base_conn,
+                close_on_exit=self._close_base_on_exit,
+                allow_prompt=self.allow_non_expected_prompt,
+                stderr=self.stderr_to_tmp,
+                use_unique_prompt=self.use_unique_prompt,
+                enable_proxyjump=self.enable_proxyjump,
+                allow_password_unencrypted=self.allow_password_unencrypted,
+            )
+        )
 
     def _open_transport(self, **kwargs):
         try:
             if not self.connections:
-                raise ConnectionError('This terminal does not have any connection assigned')
+                raise ConnectionError(
+                    "This terminal does not have any connection assigned"
+                )
             conn_idx = self._open_base(kwargs)
 
             # multi level login
@@ -230,12 +270,14 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
         except ConnectionError:
             self._close_transport()
-            log.exception('problems connecting...')
+            log.exception("problems connecting...")
             raise
 
         # override expected prompt if allowed
         if self.allow_non_expected_prompt:
-            self.connections[self._start_connection_idx].expected_prompt = self._terminals[0].shell.expected_prompt
+            self.connections[
+                self._start_connection_idx
+            ].expected_prompt = self._terminals[0].shell.expected_prompt
 
     # TODO: add tunnel information to Starting Terminal Session message
     def _open_base(self, kwargs):
@@ -246,19 +288,27 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
         self.connections[self._start_connection_idx].open()
         kwargs = fdutils.lists.setdefault(kwargs, self.__base_chan_kwargs)
-        self._transport = self.connections[self._start_connection_idx].open_terminal_channel(**kwargs)
+        self._transport = self.connections[
+            self._start_connection_idx
+        ].open_terminal_channel(**kwargs)
         self._transport.set_keepalive(settings.SOCKET_KEEPALIVE_PERIOD)
         if self._data_stream_func and not self.data_stream:
             self.data_stream = self._data_stream_func()
 
-        self._setup_login_and_prompt(self._transport, 'Starting Terminal Session with ' + self._transport.conn.host)
+        self._setup_login_and_prompt(
+            self._transport,
+            "Starting Terminal Session with " + self._transport.conn.host,
+        )
         return idx or 1
 
     def _set_start_ssh_proxyjump_conn(self):
         from ..ssh import SshConnection
+
         idx = 0
         if self.enable_proxyjump:
-            while idx < len(self.connections) and isinstance(self.connections[idx], SshConnection):
+            while idx < len(self.connections) and isinstance(
+                self.connections[idx], SshConnection
+            ):
                 idx += 1
 
             if idx:
@@ -268,14 +318,19 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         return idx
 
     def open_terminal_from_terminal(self, conn, **kwargs):
-        return self._setup_login_and_prompt(conn.open_terminal_from_terminal(self, **kwargs),
-                                            msg='OPENING NEW TERMINAL')
+        return self._setup_login_and_prompt(
+            conn.open_terminal_from_terminal(self, **kwargs), msg="OPENING NEW TERMINAL"
+        )
 
     # TODO: change the 400,80 hardcoded values to terminal shell or setting values
     # TODO: if can_change_prompt is set but we never got it to change but we had a expected prompt different to previous one
     #       and it change we should supposed that we did enter successfully or has a flag to allow it even if different
-    def _setup_login_and_prompt(self, terminal, msg='STARTING CONNECTION'):
-        self.data.new_sent('>>> {} <<<\n'.format(msg), data_stream=self.data_stream, send_msg_format='\n{}')
+    def _setup_login_and_prompt(self, terminal, msg="STARTING CONNECTION"):
+        self.data.new_sent(
+            ">>> {} <<<\n".format(msg),
+            data_stream=self.data_stream,
+            send_msg_format="\n{}",
+        )
         self.find_login_info(terminal)
         curr = self.current
         curr.shell.prompt_found = curr.shell.expected_prompt
@@ -289,7 +344,9 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         self.flush_recv()
 
         if curr.os.can_resize_pty:
-            self.send_cmd(curr.os.cmd.resize_pty(400,80)).expect_prompt(chain=True).flush_recv()
+            self.send_cmd(curr.os.cmd.resize_pty(400, 80)).expect_prompt(
+                chain=True
+            ).flush_recv()
 
         return self
 
@@ -297,24 +354,32 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         try:
             curr = self.current
 
-            if self.use_unique_prompt and curr.shell.can_change_prompt and \
-                    curr.os.reset_prompt_on_exit and curr.os.default_prompt:
+            if (
+                self.use_unique_prompt
+                and curr.shell.can_change_prompt
+                and curr.os.reset_prompt_on_exit
+                and curr.os.default_prompt
+            ):
                 try:
                     self.set_prompt(new_prompt=curr.os.default_prompt)
                 except Exception:
-                    log.exception('Problems resetting default prompt ({})'.format(curr.os.default_prompt))
+                    log.exception(
+                        "Problems resetting default prompt ({})".format(
+                            curr.os.default_prompt
+                        )
+                    )
 
             # send exit
             self.send_cmd(curr.os.cmd.exit)
 
             self._terminals = []
-            self.last_cmd_sent = ''
+            self.last_cmd_sent = ""
 
             if self._transport and self._close_base_on_exit:
                 self._transport.close()
 
         except Exception:
-            log.exception('problems closing terminal transport')
+            log.exception("problems closing terminal transport")
 
     # TODO: make a copy of conn to avoid overwriting conn info.... how deep???
     @decorators.must_be_close
@@ -337,7 +402,7 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         try:
             return self._transport.conn.host
         except AttributeError:
-            log.warning('trying to get host from not opened terminal')
+            log.warning("trying to get host from not opened terminal")
             return None
 
     @property
@@ -358,7 +423,7 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         try:
             return self.current.shell.new_line
         except Exception:
-            return '\n'
+            return "\n"
 
     @new_line.setter
     def new_line(self, value):
@@ -374,6 +439,10 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
                 return self.connections[self._start_connection_idx]
         except Exception:
             return None
+
+    @property
+    def current_conn(self):
+        return self.connections[-1]
 
     @property
     def username(self):
@@ -399,13 +468,13 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         data = self._transport.recv(buffer_size or self.buffer_size)
         if data:
             data = fdutils.regex.strip_ansi_codes_from_buffer(data)
-            #data = MULTILINE_REDUCER.sub(data, r"\n")
+            # data = MULTILINE_REDUCER.sub(data, r"\n")
             self.data.new_received(data)
         return data
 
     def recv_wait(self, wait_for, buffer_size=None):
         """ a receive with a timer to wait looping through recv and buffering the received data """
-        data = ''
+        data = ""
         t0 = time.time()
         while (time.time() - t0) < wait_for:
             d = self.recv(buffer_size)
@@ -414,14 +483,16 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         return data
 
     def _is_current_terminal_socket(self):
-        return (len(self.connections) == 1 or len(self._terminals) == 1) and \
-               not isinstance( self.current.conn, TerminalConnection)
+        return (
+            len(self.connections) == 1 or len(self._terminals) == 1
+        ) and not isinstance(self.current.conn, TerminalConnection)
 
     def get_file(self, *args, **kwargs):
         if self._is_current_terminal_socket():
             return self.current.conn.get_file(*args, **kwargs)
         else:
             return self.get_file_via_cat(*args, **kwargs)
+
     get = get_file
 
     def put_file(self, *args, **kwargs):
@@ -429,6 +500,7 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
             return self.current.conn.put_file(*args, **kwargs)
         else:
             return self.put_file_via_cat(*args, **kwargs)
+
     put = put_file
 
     def get_response(self, timeout=0.05, force_ctrl_c=False):
@@ -440,15 +512,17 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         Returns:
 
         """
-        return self.flush_recv(timeout=timeout, force_ctrl_c=force_ctrl_c).data.get_last_recv()
+        return self.flush_recv(
+            timeout=timeout, force_ctrl_c=force_ctrl_c
+        ).data.get_last_recv()
 
     def __get_last_line_prompt(self, data_received_lines):
         last_line = data_received_lines.pop()
-        #len_last_line_split = len(last_line.split())
+        # len_last_line_split = len(last_line.split())
         # if len_last_line_split >= 2:
         #     last_line = last_line.split(maxsplit=len_last_line_split - 1)[-1]
         return last_line
-        
+
     def _get_banner_and_prompt(self, terminal, previous_prompt=None):
         """ Get information about a new login (message of the day and prompt).
 
@@ -460,30 +534,56 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         # send a new line
         self.send_line()
         data_received, prompt_timer_expired, prompt_found = self._find_prompt(
-            terminal, terminal.shell.expected_prompt)
+            terminal, terminal.shell.expected_prompt
+        )
 
         if not data_received:
-            raise exceptions.ExpectLoginError('Did not get any banner message or prompt???')
+            raise exceptions.ExpectLoginError(
+                "Did not get any banner message or prompt???"
+            )
 
         data_received_lines = data_received.splitlines()
-        prompt = re.escape((prompt_found or self.__get_last_line_prompt(data_received_lines)).rstrip('\n'))
-        banner = data_received[:data_received.find(prompt) or len(data_received)]
+        prompt = re.escape(
+            (prompt_found or self.__get_last_line_prompt(data_received_lines)).rstrip(
+                "\n"
+            )
+        )
+        banner = data_received[: data_received.find(prompt) or len(data_received)]
 
-        if previous_prompt and prompt == previous_prompt and self.check_same_prompt_when_opening_terminal  and \
-                (not terminal.shell.expected_prompt or terminal.shell.expected_prompt != prompt) and \
-                not terminal.shell.skip_prompt_check and \
-                (not len(self._terminals) or self._terminals[-1].shell.can_change_prompt):
-            raise exceptions.ExpectLoginError('The prompt is still the same ({}). '
-                                              'We might have not logged into anywhere'.format(previous_prompt))
+        if (
+            previous_prompt
+            and prompt == previous_prompt
+            and self.check_same_prompt_when_opening_terminal
+            and (
+                not terminal.shell.expected_prompt
+                or terminal.shell.expected_prompt != prompt
+            )
+            and not terminal.shell.skip_prompt_check
+            and (
+                not len(self._terminals) or self._terminals[-1].shell.can_change_prompt
+            )
+        ):
+            raise exceptions.ExpectLoginError(
+                "The prompt is still the same ({}). "
+                "We might have not logged into anywhere".format(previous_prompt)
+            )
 
-        elif not self.allow_non_expected_prompt and terminal.shell.expected_prompt and prompt_timer_expired:
-            raise exceptions.ExpectLoginError('The expected prompt {} is different to the one we got {} . '
-                                              'We might be in the wrong place or the expected prompt is wrong'
-                                              ''.format(terminal.shell.expected_prompt, prompt))
+        elif (
+            not self.allow_non_expected_prompt
+            and terminal.shell.expected_prompt
+            and prompt_timer_expired
+        ):
+            raise exceptions.ExpectLoginError(
+                "The expected prompt {} is different to the one we got {} . "
+                "We might be in the wrong place or the expected prompt is wrong"
+                "".format(terminal.shell.expected_prompt, prompt)
+            )
         else:
             if prompt_timer_expired and terminal.shell.expected_prompt:
-                log.info('Prompt {} different to expected {} and . You might need to update it'
-                         ''.format(terminal.shell.expected_prompt, prompt))
+                log.info(
+                    "Prompt {} different to expected {} and . You might need to update it"
+                    "".format(terminal.shell.expected_prompt, prompt)
+                )
 
             return banner, prompt
 
@@ -492,11 +592,11 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
             if fdutils.regex.is_instance_of_regex(new_prompt):
                 prompt_regex = new_prompt
             else:
-                prompt_regex = re.compile(new_prompt, re.M|re.I)
+                prompt_regex = re.compile(new_prompt, re.M | re.I)
         else:
             prompt_regex = None
 
-        data_received = ''
+        data_received = ""
         prompt_found = None
         timer_expired = True
         timeout = timeout or terminal.shell.timeout_for_prompt
@@ -532,7 +632,9 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         try:
             self.send_line().get_new_prompt(new_prompt=new_prompt, timeout=timeout)
         except ConnectionExpectTimeoutError:
-            log.error('Problems when trying to set the new prompt. Check if the OS can change prompt')
+            log.error(
+                "Problems when trying to set the new prompt. Check if the OS can change prompt"
+            )
             raise
 
         return self
@@ -542,42 +644,61 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
     def _check_output_nb(self, command, **kwargs):
         if self._is_current_terminal_socket():
-            return self.current.conn._check_output_nb(command, **kwargs)
+            return self.current_conn._check_output_nb(command, **kwargs)
         else:
-            raise NotImplementedError('we have not implemented non blocking in terminal mode')
+            raise NotImplementedError(
+                "we have not implemented non blocking in terminal mode"
+            )
 
-    def check_output(self, command, use_sudo=False, stderr_to_tmp=False, stderr_to_out=False, recv_stream=None,
-                     return_stderr=False, **kwargs):
+    def check_output(
+        self,
+        command,
+        use_sudo=False,
+        stderr_to_tmp=False,
+        stderr_to_out=False,
+        recv_stream=None,
+        return_stderr=False,
+        **kwargs
+    ):
         self.flush_recv()
-        kwargs['reset_buffer'] = True
+        kwargs["reset_buffer"] = True
         command = self._get_cmd(command, use_sudo, stderr_to_tmp)
         send = self.send_with_stderr if stderr_to_out else self.send_cmd
 
         send(command, recv_stream=recv_stream)
 
         if use_sudo:
-            e = self.expect(expect.ExpectedRegex(SUDO_PASSWORD_PROMPT_REGEX, name='password'),
-                            expect.ExpectedPrompt(), **kwargs)
+            password = kwargs.pop("password", self.current_conn.password)
+            e = self.expect(
+                expect.ExpectedRegex(SUDO_PASSWORD_PROMPT_REGEX, name="password"),
+                expect.ExpectedPrompt(),
+                **kwargs
+            )
             if e.ok and e.index == 0:
-                send(self.current.conn.password, recv_stream=recv_stream, is_hidden=True, title='Password')
+                send(
+                    password, recv_stream=recv_stream, is_hidden=True, title="Password"
+                )
                 e = self.expect_prompt(**kwargs)
         else:
             e = self.expect_prompt(**kwargs)
 
         if e.any_matched:
-            log.debug('<<< Matched Received: \n' + e.string_before)
-            result = e.string_before.strip('\n')
+            log.debug("<<< Matched Received: \n" + e.string_before)
+            result = e.string_before.strip("\n")
             if command != self.new_line:
                 command_loc = result.find(command)
                 if command_loc != -1:
-                    result = result[command_loc + len(command):].lstrip()
+                    result = result[command_loc + len(command) :].lstrip()
 
             return result
 
-        raise exceptions.CalledProcessError(-1, command,
-                                            "Did not find prompt ({}). "
-                                            "This is the output we got: {}"
-                                            "".format(self.prompt, self.data.get_last_recv()))
+        raise exceptions.CalledProcessError(
+            -1,
+            command,
+            "Did not find prompt ({}). "
+            "This is the output we got: {}"
+            "".format(self.prompt, self.data.get_last_recv()),
+        )
 
     check_sudo_output = functools.partialmethod(check_output, use_sudo=True)
 
@@ -624,13 +745,16 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
     def send_cmd_prompt(self, cmd, **send_kwargs):
         """ send a command and wait for prompt before continuing """
-        timeout = send_kwargs.pop('timeout', 0)
+        timeout = send_kwargs.pop("timeout", 0)
         self.send_cmd(cmd, **send_kwargs).expect_prompt(timeout=timeout)
         return self
+
     send_cmd_ep = send_cmd_prompt
 
     @contextlib.contextmanager
-    def send_cmd_new_prompt_context(self, cmd, expected_prompt=None, exit_cmd="exit", **send_kwargs):
+    def send_cmd_new_prompt_context(
+        self, cmd, expected_prompt=None, exit_cmd="exit", **send_kwargs
+    ):
         """ send a command and wait for a new prompt before continuing and create a terminal in terminal context """
         curr_prompt = self.prompt
         self.send_cmd(cmd, **send_kwargs).expect_new_prompt(expected_prompt)
@@ -642,11 +766,15 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
     def get_conversation_list(self):
         return self.data.get_timed_conversation_list()
 
-    def get_conversation_string(self, template='\n>>> Sent ({date}): >>{sent}<<\n\nReceived: {received}'):
-        return '\n'.join(template.format(date=s['time'],
-                                         sent=s['sent'].strip(),
-                                         received=s['received'])
-                         for s in self.data.get_timed_conversation_list())
+    def get_conversation_string(
+        self, template="\n>>> Sent ({date}): >>{sent}<<\n\nReceived: {received}"
+    ):
+        return "\n".join(
+            template.format(
+                date=s["time"], sent=s["sent"].strip(), received=s["received"]
+            )
+            for s in self.data.get_timed_conversation_list()
+        )
 
     def send_cmds(self, *cmds, time_between=0.1, flush=True, **send_kwargs):
         if flush and self.last_cmd_sent:
@@ -655,16 +783,24 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
             self.send(cmd, True, **send_kwargs)
             time.sleep(time_between)
         return self
-    
-    def send_sudo_cmd(self, cmd, password=None, password_regex=SUDO_PASSWORD_PROMPT_REGEX, continue_if_no_passwd=True,
-                      sudo_password_prompt_timeout=1, **send_kwargs):
+
+    def send_sudo_cmd(
+        self,
+        cmd,
+        password=None,
+        password_regex=SUDO_PASSWORD_PROMPT_REGEX,
+        continue_if_no_passwd=True,
+        sudo_password_prompt_timeout=1,
+        **send_kwargs
+    ):
         try:
-            self.send_cmd('sudo ' + cmd, **send_kwargs).expect_regex(password_regex,
-                                                                     timeout=sudo_password_prompt_timeout)
+            self.send_cmd("sudo " + cmd, **send_kwargs).expect_regex(
+                password_regex, timeout=sudo_password_prompt_timeout
+            )
 
         except socket.timeout:
             if not continue_if_no_passwd:
-                log.exception('did not find password and was required')
+                log.exception("did not find password and was required")
                 raise
         else:
             self.send_hidden_cmd(password or self.current.conn.password, **send_kwargs)
@@ -672,32 +808,53 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         return self
 
     def send_sudo_cmd_prompt(self, cmd, **kwargs):
+        """ This sends a sudo command and then expect for the same prompt, don't use it if creating a new context """
         self.send_sudo_cmd(cmd, **kwargs).expect_prompt()
         return self
+
     send_sudo_cmd_ep = send_sudo_cmd_prompt
 
-    def send_confirmed_password(self, password=None, password_regex=PASSWORD_PROMPT_REGEX, is_hidden=True,
-                                timeout=2, **send_kwargs):
+    def send_confirmed_password(
+        self,
+        password=None,
+        password_regex=PASSWORD_PROMPT_REGEX,
+        is_hidden=True,
+        timeout=2,
+        **send_kwargs
+    ):
         password = password or self.current.conn.password
-        send_kwargs.setdefault('title', 'Password')
-        
+        send_kwargs.setdefault("title", "Password")
+
         self.expect_regex(password_regex, timeout=timeout)
-        self.send_cmd(password, is_hidden=is_hidden, **send_kwargs).expect_regex(password_regex, timeout=timeout)
-        send_kwargs['title'] = 'Confirmed Password'
-        return self.send_cmd(password, is_hidden=is_hidden, **send_kwargs).expect_prompt(chain=True)
+        self.send_cmd(password, is_hidden=is_hidden, **send_kwargs).expect_regex(
+            password_regex, timeout=timeout
+        )
+        send_kwargs["title"] = "Confirmed Password"
+        return self.send_cmd(
+            password, is_hidden=is_hidden, **send_kwargs
+        ).expect_prompt(chain=True)
 
     def send_ctrl_c(self):
         return self.send("\x03").send_line(False)
 
     def send_line(self, flush=True, **send_kwargs):
-        return self.send_cmd('', flush, **send_kwargs)
+        return self.send_cmd("", flush, **send_kwargs)
 
     enter = send_line
 
     def send_with_stderr(self, cmd, flush=True, **send_kwargs):
         return self.send_cmd(cmd + " 2>&1", flush, **send_kwargs)
 
-    def send(self, cmd, new_line=False, metadata=None, recv_stream=None, record=True, is_hidden=False, title=''):
+    def send(
+        self,
+        cmd,
+        new_line=False,
+        metadata=None,
+        recv_stream=None,
+        record=True,
+        is_hidden=False,
+        title="",
+    ):
         cmd = str(cmd).strip()
         if new_line:
             # add new line to command if not given already
@@ -706,18 +863,39 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
         self._transport.send(cmd)
         self.last_cmd_sent = cmd
-        self.data.new_sent(cmd, metadata=metadata, data_stream=recv_stream or self.data_stream, record=record,
-                           hide=is_hidden, title=title)
+        self.data.new_sent(
+            cmd,
+            metadata=metadata,
+            data_stream=recv_stream or self.data_stream,
+            record=record,
+            hide=is_hidden,
+            title=title,
+        )
         self._last_cmd_was_hidden = is_hidden
         return self
+
     send_hidden = functools.partialmethod(send, is_hidden=True)
 
     def log_recv(self):
-        log.debug('<<< Received: \n{}'.format(fdutils.strings.escape_string(self.data.get_last_recv())))
+        log.debug(
+            "<<< Received: \n{}".format(
+                fdutils.strings.escape_string(self.data.get_last_recv())
+            )
+        )
 
     # TODO: be able to execute different callback per match
-    def expect(self, *expect_value_list, flags=0, remove_prompt_to_compare=True, all_matches_required=False,
-               all_matches_in_sequence=False, callback=None, multiple=False, store=None, **kwargs):
+    def expect(
+        self,
+        *expect_value_list,
+        flags=0,
+        remove_prompt_to_compare=True,
+        all_matches_required=False,
+        all_matches_in_sequence=False,
+        callback=None,
+        multiple=False,
+        store=None,
+        **kwargs
+    ):
         """ execute a expect on one or more patterns
 
         Args:
@@ -736,20 +914,24 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
             expect.Expect
 
         """
-        exp_object = expect.Expect(self.last_cmd_sent,
-                                   all_matches_in_sequence=all_matches_in_sequence,
-                                   all_matches_required=all_matches_required,
-                                   continue_matching=multiple)
+        exp_object = expect.Expect(
+            self.last_cmd_sent,
+            all_matches_in_sequence=all_matches_in_sequence,
+            all_matches_required=all_matches_required,
+            continue_matching=multiple,
+        )
 
         if callback and not callable(callback):
-            raise ValueError('The call_back should be a function')
+            raise ValueError("The call_back should be a function")
 
         for v in expect_value_list:
             if not isinstance(v, expect.ExpectedRegex):
-                v = expect.ExpectedRegex(v, flags=flags, remove_prompt_to_compare=remove_prompt_to_compare)
+                v = expect.ExpectedRegex(
+                    v, flags=flags, remove_prompt_to_compare=remove_prompt_to_compare
+                )
             exp_object.add(v)
 
-        chain = kwargs.pop('chain', store is not None or self._chain_all_expects)
+        chain = kwargs.pop("chain", store is not None or self._chain_all_expects)
 
         ret = self._expect_cmd(exp_object, **kwargs)
 
@@ -764,9 +946,15 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         else:
             return ret.results()
 
-    def expect_ask_response_list(self, ask_response_list, stop_after_getting=None,
-                                 timeout_after_first_match=0, remove_prompt_to_compare=True,
-                                 chain=False, **kwargs):
+    def expect_ask_response_list(
+        self,
+        ask_response_list,
+        stop_after_getting=None,
+        timeout_after_first_match=0,
+        remove_prompt_to_compare=True,
+        chain=False,
+        **kwargs
+    ):
         """ simple procedure to go through a list of expected values and their corresponding responses
 
             There are some conditions that might break the required statement on some of the items in the list:
@@ -786,8 +974,9 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         """
 
         # separate values with names from those without name and also add an index to each
-        expect_list, ask_resp_list_by_name = create_expectedregex_objects(ask_response_list,
-                                                                          kwargs, remove_prompt_to_compare)
+        expect_list, ask_resp_list_by_name = create_expectedregex_objects(
+            ask_response_list, kwargs, remove_prompt_to_compare
+        )
 
         stop_after_getting = fdutils.lists.to_sequence(stop_after_getting)
 
@@ -799,7 +988,9 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         while len(expect_list):
             exp = self.expect(*expect_list.values(), **kwargs)
 
-            quota_filled, continue_checking = ask_resp_list_by_name[exp.name].match_found()
+            quota_filled, continue_checking = ask_resp_list_by_name[
+                exp.name
+            ].match_found()
 
             if quota_filled:
                 match_set.add(exp.name)
@@ -809,21 +1000,29 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
                 del expect_list[exp.name]
 
             if ask_resp_list_by_name[exp.name].response is not None:
-                self.send_cmd(ask_resp_list_by_name[exp.name].response,
-                              is_hidden=ask_resp_list_by_name[exp.name].hidden)
+                self.send_cmd(
+                    ask_resp_list_by_name[exp.name].response,
+                    is_hidden=ask_resp_list_by_name[exp.name].hidden,
+                )
             else:  # implicit prompt
                 break
 
-            any_required_left = any(ask_resp_list_by_name[l].required for l in expect_list)
+            any_required_left = any(
+                ask_resp_list_by_name[l].required for l in expect_list
+            )
 
-            if stop_after_getting and exp.name in stop_after_getting or not any_required_left:
+            if (
+                stop_after_getting
+                and exp.name in stop_after_getting
+                or not any_required_left
+            ):
                 break
 
             kwargs = ask_resp_list_by_name[exp.name].kwargs or _kwargs
 
             # change timeout for next expect
             if timeout_after_first_match:
-                kwargs['timeout'] = timeout_after_first_match
+                kwargs["timeout"] = timeout_after_first_match
 
             i += 1
 
@@ -833,36 +1032,47 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
             return match_list
 
     def expect_all(self, *expect_value_list, **kwargs):
-        kwargs['all_matches_required'] =  True
+        kwargs["all_matches_required"] = True
         return self.expect(*expect_value_list, **kwargs)
 
     def expect_multiple(self, *expect_value_list, **kwargs):
-        kwargs['multiple'] = True
+        kwargs["multiple"] = True
         return self.expect(*expect_value_list, **kwargs)
 
     def expect_all_in_sequence(self, *expect_value_list, **kwargs):
-        kwargs['all_matches_required'] = True
-        kwargs['all_matches_in_sequence'] = True
+        kwargs["all_matches_required"] = True
+        kwargs["all_matches_in_sequence"] = True
         return self.expect(*expect_value_list, **kwargs)
 
     def expect_regex(self, regex, **kwargs):
         return self.expect(regex, **kwargs)
 
     def expect_string(self, string, flags=0, remove_prompt_to_compare=True, **kwargs):
-        return self.expect(expect.ExpectedString(string, flags=flags, remove_prompt_to_compare=remove_prompt_to_compare),
-                           **kwargs)
+        return self.expect(
+            expect.ExpectedString(
+                string, flags=flags, remove_prompt_to_compare=remove_prompt_to_compare
+            ),
+            **kwargs
+        )
+
     expect_str = expect_string
 
     def expect_prompt(self, timeout=0, **kwargs):
         return self.expect(expect.ExpectedPrompt(), timeout=timeout, **kwargs)
+
     ep = expect_prompt
 
     def expect_istring(self, string, flags=0, remove_prompt_to_compare=True, **kwargs):
         flags |= re.I
-        kwargs['flags'] = flags
+        kwargs["flags"] = flags
 
-        return self.expect(expect.ExpectedString(string, flags=flags, remove_prompt_to_compare=remove_prompt_to_compare),
-                           **kwargs)
+        return self.expect(
+            expect.ExpectedString(
+                string, flags=flags, remove_prompt_to_compare=remove_prompt_to_compare
+            ),
+            **kwargs
+        )
+
     expect_istr = expect_istring
 
     # TODO need consistency on return of all expect methods
@@ -876,10 +1086,14 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
     def find_login_info(self, terminal):
 
         if terminal == self.current:
-            raise ValueError('The channel provided is the same as the current. There must be an error.')
+            raise ValueError(
+                "The channel provided is the same as the current. There must be an error."
+            )
 
         old_prompt = self.prompt if self._terminals else None
-        terminal.shell.banner, terminal.shell.expected_prompt = self._get_banner_and_prompt(terminal, old_prompt)
+        terminal.shell.banner, terminal.shell.expected_prompt = self._get_banner_and_prompt(
+            terminal, old_prompt
+        )
         self._terminals.append(terminal)
         return self
 
@@ -888,8 +1102,10 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         try:
             exp = self.send_line().expect_prompt()
             if not exp.any_matched:
-                raise exceptions.ExpectLoginError('expecting logout but did '
-                                                  'not get the previous terminal prompt: ' + self.prompt)
+                raise exceptions.ExpectLoginError(
+                    "expecting logout but did "
+                    "not get the previous terminal prompt: " + self.prompt
+                )
             else:
                 return exp
         except Exception:
@@ -897,26 +1113,36 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
             raise
 
     def get_new_prompt(self, timeout=0, update=True, new_prompt=None, chain=False):
-        new_prompt = new_prompt
-        data, timer_expired, prompt_found = self._find_prompt(self.current, new_prompt=new_prompt, timeout=timeout)
+        data, timer_expired, prompt_found = self._find_prompt(
+            self.current, new_prompt=new_prompt, timeout=timeout
+        )
 
         if not data or new_prompt and not prompt_found:
-            if self.last_cmd_sent == '\n':
-                cmd = 'PROPMT'
+            if self.last_cmd_sent == "\n":
+                cmd = "PROPMT"
             else:
                 cmd = self.last_cmd_sent.strip()
             if not new_prompt:
                 raised_data = data
             elif data:
-                raised_data = 'Prompt was not found for cmd ({}). Expected ({}) but got ({})' \
-                             ''.format(cmd, new_prompt, data.splitlines()[-1])
+                raised_data = (
+                    "Prompt was not found for cmd ({}). Expected ({}) but got ({})"
+                    "".format(cmd, new_prompt, data.splitlines()[-1])
+                )
             else:
-                raised_data = 'Prompt was not found for cmd ({}). Expected ({}) but got no data' \
-                              ''.format(cmd, new_prompt)
-            log.error('PROMPT NOT FOUND: we got so far: ' + self.get_conversation_string())
-            raise exceptions.PromptNotFoundError(raised_data if not self._last_cmd_was_hidden else
-                                                 raised_data.replace(self.last_cmd_sent, settings.HIDDEN_DATA_MSG))
-        
+                raised_data = (
+                    "Prompt was not found for cmd ({}). Expected ({}) but got no data"
+                    "".format(cmd, new_prompt)
+                )
+            log.error(
+                "PROMPT NOT FOUND: we got so far: " + self.get_conversation_string()
+            )
+            raise exceptions.PromptNotFoundError(
+                raised_data
+                if not self._last_cmd_was_hidden
+                else raised_data.replace(self.last_cmd_sent, settings.HIDDEN_DATA_MSG)
+            )
+
         elif update:
             self.prompt = re.escape(prompt_found or data.splitlines()[-1])
 
@@ -924,8 +1150,14 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
             return self
         return self.prompt
 
-    def record(self, timeout=None, record_stop_signal=None, output_stream=None, time_to_sleep_between_recv=None,
-               silent=False):
+    def record(
+        self,
+        timeout=None,
+        record_stop_signal=None,
+        output_stream=None,
+        time_to_sleep_between_recv=None,
+        silent=False,
+    ):
         """ records the data received from the terminal to an output_stream
             useful for recording files that change overtime in a tail or to capture log messages
 
@@ -940,20 +1172,27 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
         """
 
-        time_to_sleep_between_recv = time_to_sleep_between_recv or self.sleep_time_after_no_data
+        time_to_sleep_between_recv = (
+            time_to_sleep_between_recv or self.sleep_time_after_no_data
+        )
         timer = fdutils.timer.get_timer_from_timeout(timeout)
 
         stream = None if silent else (output_stream or StringIO())
 
-        while not (timer.has_expired or
-                   self.stop_signal.is_set() or
-                   record_stop_signal and record_stop_signal.is_set()):
+        while not (
+            timer.has_expired
+            or self.stop_signal.is_set()
+            or record_stop_signal
+            and record_stop_signal.is_set()
+        ):
 
             recv = self.recv()
 
             if recv == 0:
                 self.close()
-                log.error('recv command return empty string. End side might have been closed!')
+                log.error(
+                    "recv command return empty string. End side might have been closed!"
+                )
                 raise ConnectionError
 
             elif recv != constants.SOCKET_RECV_NOT_READY and not silent:
@@ -966,14 +1205,22 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 
     # TODO: define a circular buffer of new lines
     # TODO: reset buffer on chain match
-    def _expect_cmd(self, expect_cmd, timeout=None, reset_on_new_line=False, buffer_size=None, reset_buffer=False):
-
+    def _expect_cmd(
+        self,
+        expect_cmd,
+        timeout=None,
+        reset_on_new_line=False,
+        buffer_size=None,
+        reset_buffer=False,
+    ):
         def _check_match(comp_buff):
-            return comp_buff and expect_cmd.find_expected_values_and_prompt_in_buffer(comp_buff, self.prompt)
+            return comp_buff and expect_cmd.find_expected_values_and_prompt_in_buffer(
+                comp_buff, self.prompt
+            )
 
         # accumulated responses from server
         if reset_buffer:
-            buff = ''
+            buff = ""
         else:
             buff = self.data.get_last_recv()
             if buff and _check_match(buff):
@@ -989,23 +1236,29 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
         timer = fdutils.timer.get_timer_from_timeout(timeout or self.timeout)
 
         match_found = False
-        while not(match_found or timer.has_expired or self.stop_signal.is_set()):
+        while not (match_found or timer.has_expired or self.stop_signal.is_set()):
 
             try:
                 recv = self.recv(buffer_size)
 
             except socket.timeout:
 
-                log.debug('Did not receive any data for a while ' + str(expect_cmd))
+                log.debug("Did not receive any data for a while " + str(expect_cmd))
 
                 if not received_anything:
-                    log.error('Did not receive any data before the socket timeout ({}). Increase the timeout or '
-                              'check the command or system under test.'.format(str(self._transport.timeout)))
+                    log.error(
+                        "Did not receive any data before the socket timeout ({}). Increase the timeout or "
+                        "check the command or system under test.".format(
+                            str(self._transport.timeout)
+                        )
+                    )
                     raise ConnectionError
 
             if recv == 0:
                 self.close()
-                log.error('recv command return empty string. End side might have been closed!')
+                log.error(
+                    "recv command return empty string. End side might have been closed!"
+                )
                 raise ConnectionError
 
             elif recv != constants.SOCKET_RECV_NOT_READY:
@@ -1017,22 +1270,27 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
                     break
 
                 if reset_on_new_line:
-                    new_line_split = buff.rfind('\n') + 1
+                    new_line_split = buff.rfind("\n") + 1
                     if new_line_split != 0:
                         buff = buff[new_line_split:]
 
             else:  # SOCKET_RECV_NOT_READY
                 time.sleep(self.sleep_time_after_no_data)
-        else:    # no break
+        else:  # no break
             if timer.has_expired:
-                buff = buff[-settings.BUFFER_SIZE_TO_RETURN_WHEN_ERROR:]
+                buff = buff[-settings.BUFFER_SIZE_TO_RETURN_WHEN_ERROR :]
                 if self._last_cmd_was_hidden:
                     buff = buff.replace(self.last_cmd_sent, settings.HIDDEN_DATA_MSG)
 
                 raise exceptions.ConnectionExpectTimeoutError(
-                    'Failed to match ({}) before timeout of ({}) secs.\n'
-                    'Last {} chars: \n{}'.format(expect_cmd.expect_values, timeout or self.timeout,
-                                                 settings.BUFFER_SIZE_TO_RETURN_WHEN_ERROR, buff))
+                    "Failed to match ({}) before timeout of ({}) secs.\n"
+                    "Last {} chars: \n{}".format(
+                        expect_cmd.expect_values,
+                        timeout or self.timeout,
+                        settings.BUFFER_SIZE_TO_RETURN_WHEN_ERROR,
+                        buff,
+                    )
+                )
 
         return expect_cmd
 
@@ -1040,18 +1298,29 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
     def _update_login(self, results, number_of_lines_for_prompt, new_line, shell=None):
         results.seek(0)
         welcome_message_lines = results.read().splitlines()
-        prompt = '\n'.join(welcome_message_lines[len(welcome_message_lines) - number_of_lines_for_prompt:])
+        prompt = "\n".join(
+            welcome_message_lines[
+                len(welcome_message_lines) - number_of_lines_for_prompt :
+            ]
+        )
 
         if shell is None:
             shell = shells.ShellLoginInformation()
 
         # checks if expected prompt is the one we got and if we are not skipping the check raise an exception
-        if shell.expected_prompt is None and re.search(self.prompt, prompt) and not shell.skip_prompt_check:
+        if (
+            shell.expected_prompt is None
+            and re.search(self.prompt, prompt)
+            and not shell.skip_prompt_check
+        ):
             raise exceptions.ExpectLoginError
 
-        shell.update(welcome_message=welcome_message_lines[:-number_of_lines_for_prompt],
-                     expected_prompt=prompt, number_of_lines_for_prompt=number_of_lines_for_prompt,
-                     new_line=new_line)
+        shell.update(
+            welcome_message=welcome_message_lines[:-number_of_lines_for_prompt],
+            expected_prompt=prompt,
+            number_of_lines_for_prompt=number_of_lines_for_prompt,
+            new_line=new_line,
+        )
         # do not copy if it is already added
         if self._terminals[-1] != shell:
             self._terminals.append(shell)
@@ -1060,12 +1329,15 @@ class TerminalConnection(base.Connection, mixins.CanExecuteCommands, mixins.CanT
 # TODO: get this with inspect.signature
 def set_terminal_kwargs(kwargs):
     return dict(
-        close_base_on_exit=kwargs.pop('close_base_on_exit', True),
-        allow_non_expected_prompt=kwargs.pop('allow_non_expected_prompt', False),
-        data_stream=kwargs.pop('data_stream', None),
-        stderr_to_tmp=kwargs.pop('stderr_to_tmp', False),
-        rtt=kwargs.pop('rtt', 0.5),
-        check_same_prompt_when_opening_terminal=kwargs.pop('check_same_prompt_when_opening_terminal', True))
+        close_base_on_exit=kwargs.pop("close_base_on_exit", True),
+        allow_non_expected_prompt=kwargs.pop("allow_non_expected_prompt", False),
+        data_stream=kwargs.pop("data_stream", None),
+        stderr_to_tmp=kwargs.pop("stderr_to_tmp", False),
+        rtt=kwargs.pop("rtt", 0.5),
+        check_same_prompt_when_opening_terminal=kwargs.pop(
+            "check_same_prompt_when_opening_terminal", True
+        ),
+    )
 
 
 def update_default_kwargs_on_call(kwargs, default_kwargs):
@@ -1079,23 +1351,28 @@ def update_default_kwargs_on_call(kwargs, default_kwargs):
 # TODO: should it be metaclass??
 class TerminalConnectionWrapper:
     """ Helper class to enclose a connection with Terminal. similar to a metaclass """
-    def __init__(self, wrapped_connection, host='', **kwargs):
+
+    def __init__(self, wrapped_connection, host="", **kwargs):
         self.wrapped_connection = wrapped_connection
         self.host = host
         self.terminal_kwargs = set_terminal_kwargs(kwargs)
         self.wrapped_connection_kwargs = kwargs
-        self.ARGUMENTS_ALLOWED = wrapped_connection.ARGUMENTS_ALLOWED + tuple(self.terminal_kwargs.keys())
+        self.ARGUMENTS_ALLOWED = wrapped_connection.ARGUMENTS_ALLOWED + tuple(
+            self.terminal_kwargs.keys()
+        )
 
     def __call__(self, *args, **kwargs):
 
-        tunnel = kwargs.pop('tunnel', None)
+        tunnel = kwargs.pop("tunnel", None)
 
-        if 'host' in self.wrapped_connection.ARGUMENTS_ALLOWED:
-            kwargs.setdefault('host', self.host)
+        if "host" in self.wrapped_connection.ARGUMENTS_ALLOWED:
+            kwargs.setdefault("host", self.host)
         elif tunnel:
-            kwargs.pop('host', None)
+            kwargs.pop("host", None)
         else:
-            raise ConnectionError('We have not implemented having a command connection without a tunnel')
+            raise ConnectionError(
+                "We have not implemented having a command connection without a tunnel"
+            )
 
         # pop arguments destined for TerminalConnection
         terminal_kwargs = update_default_kwargs_on_call(kwargs, self.terminal_kwargs)
@@ -1114,14 +1391,16 @@ class TerminalConnectionWrapper:
         return TerminalConnection(connections, **terminal_kwargs)
 
     def open_terminal_from_terminal(self, term_tunnel, **kwargs):
-        return self.wrapped_connection(**kwargs).open_terminal_from_terminal(term_tunnel)
+        return self.wrapped_connection(**kwargs).open_terminal_from_terminal(
+            term_tunnel
+        )
 
     def __getattr__(self, item):
         # anything else let the wrapped connection take care
         return getattr(self.wrapped_connection, item)
 
 
-def terminal_connection_wrapper(wrapped_connection, host='', **kwargs):
+def terminal_connection_wrapper(wrapped_connection, host="", **kwargs):
     tcw = TerminalConnectionWrapper(wrapped_connection, host)
     set_terminal_kwargs(kwargs)
     return tcw(**kwargs)

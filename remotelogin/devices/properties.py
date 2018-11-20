@@ -44,11 +44,11 @@ class WithSlots:
 
 class UserInfo(WithSlots):
     __slots__ = ('fullname', 'username', 'password', 'key_filename', 'key_password', 'location', 'id', 'email',
-                 'expected_prompt', 'name')
+                 'expected_prompt', 'name', 'key_cert')
 
     NAME_IN_MANAGER = 'users'
 
-    def __init__(self, username='', password='', fullname='', id=None, key_filename=None, key_password=None,
+    def __init__(self, username='', password='', fullname='', id=None, key_filename=None, key_password=None, key_cert=None,
                  location='', email='', expected_prompt=None, name=''):
         self.fullname = fullname
         self.username = username or name
@@ -60,6 +60,7 @@ class UserInfo(WithSlots):
         self.email = email
         self.expected_prompt = expected_prompt
         self.name = name or username
+        self.key_cert = key_cert
 
     def get_kwargs(self, keys):
         return {k: getattr(self, k) for k in self.__slots__ if k in keys and getattr(self, k) is not None}
@@ -233,7 +234,7 @@ class ConnectionInfo:
         self.interface = self._get_default_instance(InterfaceInfo, interface)
         self.tunnel = self._get_default_instance(TunnelInfo, tunnel)
         # dropping any information related to user passed by mistake here
-        for user_arg in ('username', 'password', 'key_filename', 'key_password'):
+        for user_arg in ('username', 'password', 'key_filename', 'key_password', 'key_cert'):
             if user_arg in conn_args:
                 log.warning('This connection was passed a user argument ({}). We are dropping it to avoid any issues. '
                             'You need to add the user using device.users object'.format(user_arg))

@@ -8,7 +8,7 @@ SOCKET_TIMEOUT = 30
 # time to complete a login use in expect login into another account like telnet -> telnet -> telnet
 SOCKET_TIMEOUT_FOR_LOGIN = 8
 
-TIMEOUT_FOR_PROMPT = 0.7
+TIMEOUT_FOR_PROMPT = 2
 # time to complete a login use in expect login into another account like telnet -> telnet -> telnet
 SOCKET_TIMEOUT_FOR_LOGIN_TELNET = 8
 

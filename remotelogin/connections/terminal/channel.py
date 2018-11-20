@@ -9,12 +9,15 @@ log = logging.getLogger(__name__)
 
 class TerminalShell:
     def __init__(self, conn, **shell_kwargs):
-        if hasattr(conn, 'username'):
-            shell_kwargs.setdefault('ask_response_list',
-                                    term.get_ask_resp_list_for_new_connection(conn.username, conn.password,
-                                                                              conn.expected_prompt))
-        shell_kwargs.setdefault('expected_prompt', conn.expected_prompt)
-        shell_kwargs.setdefault('skip_prompt_check', conn.skip_prompt_check)
+        if hasattr(conn, "username"):
+            shell_kwargs.setdefault(
+                "ask_response_list",
+                term.get_ask_resp_list_for_new_connection(
+                    conn.username, conn.password, conn.expected_prompt
+                ),
+            )
+        shell_kwargs.setdefault("expected_prompt", conn.expected_prompt)
+        shell_kwargs.setdefault("skip_prompt_check", conn.skip_prompt_check)
         self.shell = ShellLoginInformation(**shell_kwargs)
         self.shell.update_from_conn(conn)
         self.os = conn.os
@@ -37,7 +40,7 @@ class TerminalChannel(TerminalShell):
 
         """
         super(TerminalChannel, self).__init__(conn, **shell_kwargs)
-        self.channel = channel      # implemented connection link
+        self.channel = channel  # implemented connection link
         self.conn = conn
         self._resize_pty(cols=self.shell.cols, rows=self.shell.rows)
 
@@ -62,8 +65,7 @@ class TerminalChannel(TerminalShell):
         raise NotImplementedError
 
     def resize_pty(self, cols=0, rows=0):
-        self._resize_pty(cols=(cols or self.shell.cols),
-                         rows=(rows or self.shell.rows))
+        self._resize_pty(cols=(cols or self.shell.cols), rows=(rows or self.shell.rows))
 
     def _resize_pty(self, **kwargs):
         raise NotImplementedError
@@ -90,11 +92,11 @@ class TerminalChannel(TerminalShell):
         try:
             self._close()
         except Exception:
-            log.exception('problems closing channel self._close method')
+            log.exception("problems closing channel self._close method")
         try:
             self.conn.close()
         except Exception:
-            log.exception('problems closing channel connection')
+            log.exception("problems closing channel connection")
 
     def _close(self):
         pass

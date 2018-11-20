@@ -132,14 +132,16 @@ class LocalConnection(term.ConnectionWithTerminal, mixins.CanExecuteCommands, mi
 
         client.timeout = self.timeout
         set_non_blocking(client.stdout)
-        set_non_blocking(client.stderr)
+        if not self.redirect_stderr:
+            set_non_blocking(client.stderr)
 
         def stop_process():
             client.terminate()
             client.wait()
             client.stdin.close()
             client.stdout.close()
-            client.stderr.close()
+            if not self.redirect_stderr:
+                client.stderr.close()
 
         # duct tape popen so the thread can call close as expected
         client.close = stop_process
