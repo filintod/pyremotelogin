@@ -946,6 +946,7 @@ class TerminalConnection(
         else:
             return ret.results()
 
+    # TODO: add expect new prompt
     def expect_ask_response_list(
         self,
         ask_response_list,

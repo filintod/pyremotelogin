@@ -6,7 +6,7 @@ db:
    host: ''
    port: ''
    #service_name:
-   db: 'c:\Users\duran\p3ml\remotelogin\remotelogin\devices\tests\testdb.db'
+   db: '/home/fduran/devices'
 
 connections: {}
   # from deviceconn.connections.settings
@@ -32,7 +32,6 @@ devices: {}
     # from deviceconn.devices.settings
     # DEFAULT_DOWNLOAD_FOLDER: 'c:\Users\my user'
 
-
-vault:
-  password_file: encrypt_password_file
+vault: {}
+  #password_file: encrypt_password_file
 

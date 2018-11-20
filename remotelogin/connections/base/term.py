@@ -219,7 +219,7 @@ class ConnectionWithTerminal(Connection, abc.ABC):
                 terminal_shell.shell.ask_response_list,
                 timeout=self.connect_timeout,
                 stop_after_getting='prompt',
-                timeout_after_first_match=min(self.connect_timeout, 1),
+                timeout_after_first_match=min(self.connect_timeout, settings.SOCKET_TIMEOUT_FOR_LOGIN),
                 remove_prompt_to_compare=False
             )
 
