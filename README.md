@@ -24,8 +24,8 @@ An example of simple ssh connection:
 ``` python
 from remotelogin.connections.ssh import SshConnection
 ssh = SshConnection(host='127.0.0.1',
-                    username='learner',
-                    password='textingcanwait')
+                    username='learningpython',
+                    password='letmein')
 
 with ssh.open() as conn:
     print('My Hostname is: {}'.format(conn.check_output('hostname')))
@@ -40,8 +40,8 @@ from remotelogin.connections.telnet import TelnetConnection
 from remotelogin.connections.terminal import TerminalConnection
 
 vm_info=dict(host="127.0.0.1",
-             username="learner",
-             password="textingcanwait",
+             username="learningpython",
+             password="letmein",
              expected_prompt=r'learner\@ubuntu\:\~\$')
 
 hop1=SshConnection(**vm_info)
