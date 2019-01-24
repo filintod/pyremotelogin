@@ -14,7 +14,7 @@ from remotelogin.devices.base_db_named import TableNamedDevice
 from remotelogin.devices.exceptions import UnknownConnectionError, DuplicatedConnectionError, ConnectionInstanceOpenError
 from remotelogin.devices.tests.utils import update_db_config
 
-DEF_CONN_DICT = dict(proto='ssh', user=dict(username='learner', password='textingcanwait'), port='922',
+DEF_CONN_DICT = dict(proto='ssh', user=dict(username='learner', password='mypassword'), port='922',
                      expected_prompt=r'{username}@.+?:~\$ ')
 
 RPI_CONN_DICT = dict(proto='ssh', user=dict(username='pi', password='raspberry',
@@ -28,16 +28,16 @@ DEF_CONN_DICT_KEY = dict(proto='ssh', user=dict(username='mysshuser', key_filena
 DEF_CONN_DICT_KEY_ENC = dict(proto='ssh', port=922,
                              user=dict(username='mysshuser',
                                        key_filename='my_priv_key_enc',
-                                       key_password='textingcanwait'),
+                                       key_password='mypassword'),
                              expected_prompt=r'{username}@.+?:~\$ ')
 
-USERS = dict(learner=dict(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ', username='learner'),
-             mysshuser=dict(password='textingcanwait', key_filename='my_priv_key_enc', key_password='textingcanwait',
+USERS = dict(learner=dict(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ', username='learner'),
+             mysshuser=dict(password='mypassword', key_filename='my_priv_key_enc', key_password='mypassword',
                             expected_prompt=r'{username}@.+?:~\$ ', username='mysshuser'))
 
 
 
-DEF_TELNET_CONN_DICT = dict(proto='telnet', user=dict(username='learner', password='textingcanwait'), port=923,
+DEF_TELNET_CONN_DICT = dict(proto='telnet', user=dict(username='learner', password='mypassword'), port=923,
                             expected_prompt=r'{username}@.+?:~\$ ')
 
 
@@ -66,7 +66,7 @@ def test_ssh_via_device_connections():
     assert d.conn.default.cls == ssh.SshConnection
     assert d.conn.default.user == d.users.default
     assert d.users.default.username == 'learner'
-    assert d.users.default.password == 'textingcanwait'
+    assert d.users.default.password == 'mypassword'
     assert d.conn.default.port == 922
     assert d.conn.default.host == '127.0.0.1'
 
@@ -98,7 +98,7 @@ def test_proto_embedded_in_name():
     assert d.conn.default.user == d.users.default
 
     assert d.users.default.username == 'learner'
-    assert d.users.default.password == 'textingcanwait'
+    assert d.users.default.password == 'mypassword'
 
     assert d.conn.default.port == 922
     assert d.conn.default.host == '127.0.0.1'
@@ -158,7 +158,7 @@ def test_context_manager():
     # using the forwarded port
     ssh_port = 22 if (sys.platform == 'linux') else 922
     expected_prompt = r"learner@{hostname}:~\$ ".format(hostname=hostname)
-    ssh_conn = ssh.SshConnection(host='127.0.0.1', username='learner', password='textingcanwait', port=ssh_port,
+    ssh_conn = ssh.SshConnection(host='127.0.0.1', username='learner', password='mypassword', port=ssh_port,
                                  expected_prompt=expected_prompt)
 
     @contextlib.contextmanager
@@ -170,7 +170,7 @@ def test_context_manager():
 
                 conn.send_cmd('telnet localhost -l learner').\
                      expect_regex('password', flags=re.I, chain=True).\
-                     send_hidden_cmd('textingcanwait').\
+                     send_hidden_cmd('mypassword').\
                      expect_new_prompt(expected_prompt)
 
                 yield conn
@@ -385,8 +385,8 @@ def test_ssh_conversations_saved_diff_instance_name():
 
 def test_multiple_users():
     DEF_CONN_DICT = dict(proto='ssh', port=922, expected_prompt=r'{username}@.+?:~\$ ')
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
-    user2 = properties.UserInfo(password='textingcanwait', expected_prompt='\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
+    user2 = properties.UserInfo(password='mypassword', expected_prompt='\$ ')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(learner=user1, mysshuser=user2, default_name='learner'))
     with d.conn.open(user='learner') as user1_conn:
@@ -398,7 +398,7 @@ def test_multiple_users():
 
 def test_multiple_interfaces():
     DEF_CONN_DICT = dict(proto='ssh', port=922, expected_prompt=r'{username}@.+?:~\$ ')
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(learner=user1),
                    interfaces=dict(default=dict(ip='127.0.0.1'),
@@ -412,10 +412,10 @@ def test_multiple_interfaces():
         assert user1_conn.check_output('whoami') == 'learner'
 
 def test_userinfo_in_conn():
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ',
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ',
                                                   username='learner')
     DEF_CONN_DICT = dict(proto='ssh', port=922, expected_prompt=r'{username}@.+?:~\$ ', user=user1)
-    user2 = properties.UserInfo(password='textingcanwait', expected_prompt='\$ ')
+    user2 = properties.UserInfo(password='mypassword', expected_prompt='\$ ')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(mysshuser=user2))
     with d.conn.open() as user1_conn:
@@ -423,8 +423,8 @@ def test_userinfo_in_conn():
 
 def test_multiple_users_default_user_in_conn():
     DEF_CONN_DICT = dict(proto='ssh', port=922, expected_prompt=r'{username}@.+?:~\$ ', user='mysshuser')
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
-    user2 = properties.UserInfo(password='textingcanwait', expected_prompt='\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
+    user2 = properties.UserInfo(password='mypassword', expected_prompt='\$ ')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(learner=user1, mysshuser=user2, default_name='learner'))
     with d.conn.open() as user1_conn:
@@ -433,8 +433,8 @@ def test_multiple_users_default_user_in_conn():
 
 def test_multiple_users_overrride_conn():
     DEF_CONN_DICT = dict(proto='ssh', username='my_default_user', port=922, expected_prompt=r'{username}@.+?:~\$ ')
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
-    user2 = properties.UserInfo(password='textingcanwait', expected_prompt='\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
+    user2 = properties.UserInfo(password='mypassword', expected_prompt='\$ ')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(learner=user1, mysshuser=user2, default_name='learner'))
     with d.conn.open(user='learner') as user1_conn:
@@ -445,8 +445,8 @@ def test_multiple_users_overrride_conn():
 
 def test_multiple_users_no_expected_prompt():
     DEF_CONN_DICT = dict(proto='ssh', port=922, expected_prompt=r'{username}@.+?:~\$ ')
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=None)
-    user2 = properties.UserInfo(password='textingcanwait', expected_prompt=None)
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=None)
+    user2 = properties.UserInfo(password='mypassword', expected_prompt=None)
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(learner=user1, mysshuser=user2))
     d.users.set_default('learner')
@@ -527,7 +527,7 @@ def test_ssh_connection_with_different_file_storage_of_converstation_for_new_ope
 
 def test_expected_prompt_from_connection_is_used_when_user_does_nor_provide_it():
     DEF_CONN_DICT = dict(proto='ssh', port=922, expected_prompt=r'{username}@.+?:~\$ ')
-    user1 = properties.UserInfo(password='textingcanwait')
+    user1 = properties.UserInfo(password='mypassword')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(learner=user1))
     with d.conn.open(user='learner') as user1_conn:
@@ -574,8 +574,8 @@ def test_device_open_connection_with_user_lacking_all_auth_keys_raises_UserAuthe
 
 def test_device_uses_currently_open_connection_when_using_connection_cmd_directly():
     DEF_CONN_DICT = dict(proto='ssh', username='my_default_user', port=922, expected_prompt=r'{username}@.+?:~\$ ')
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
-    user2 = properties.UserInfo(password='textingcanwait', expected_prompt='\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
+    user2 = properties.UserInfo(password='mypassword', expected_prompt='\$ ')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT),
                    users=dict(learner=user1, mysshuser=user2, default_name='learner'))
     with d.conn.open(user='mysshuser'):
@@ -583,7 +583,7 @@ def test_device_uses_currently_open_connection_when_using_connection_cmd_directl
 
 def test_device_add_set_prompt_while_connecting():
     DEF_CONN_DICT = dict(proto='ssh', port=922)
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?\:\~\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?\:\~\$ ')
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT), users=dict(learner=user1))
     d.os.can_change_prompt = True
     d.os.cmd.set_prompt = lambda prompt: 'export PS1=' + str(prompt)
@@ -593,7 +593,7 @@ def test_device_add_set_prompt_while_connecting():
 
 def test_device_add_set_prompt_implicit_by_device_os():
     DEF_CONN_DICT = dict(proto='ssh', port=922)
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     d = linux.LinuxDevice('localhost', connections=dict(ssh=DEF_CONN_DICT), users=dict(learner=user1))
     with d.conn.open():
         assert re.search(constants.UNIQUE_PROMPT_RE, d.conn.prompt)
@@ -601,7 +601,7 @@ def test_device_add_set_prompt_implicit_by_device_os():
 
 def test_connection_override_device_os_set_prompt():
     DEF_CONN_DICT = dict(proto='ssh', port=922)
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     d = linux.LinuxDevice('localhost', connections=dict(ssh=DEF_CONN_DICT), users=dict(learner=user1))
     d.os.can_change_prompt = False
     with d.conn.open():
@@ -613,7 +613,7 @@ def test_saving_restoring_connections_to_db():
     update_db_config()
 
     DEF_CONN_DICT = dict(proto='ssh', port=922)
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     d = Device('localhost', connections=dict(ssh=DEF_CONN_DICT), users=dict(learner=user1))
     d.os.can_change_prompt = False
     with d.conn.open():
@@ -640,7 +640,7 @@ def test_saving_restoring_connections_to_db_custom_name():
     update_db_config()
 
     DEF_CONN_DICT = dict(proto='ssh', port=922)
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     d = Devices2('localhost', connections=dict(ssh=DEF_CONN_DICT), users=dict(learner=user1))
     d.os.can_change_prompt = False
     with d.conn.open():
@@ -662,7 +662,7 @@ def test_saving_restoring_connections_to_db_custom_name():
 
 def test_cmd_connection_no_tunnel():
     user1 = properties.UserInfo(username='learner',
-                                                  password='textingcanwait',
+                                                  password='mypassword',
                                                   expected_prompt=r'{username}@.+?:~\$ ')
     d = Device('localhost',
                connections=dict(t={'proto': 'command', 'cmd': 'telnet 127.0.0.1', 'user': user1, 'can_change_prompt': False}),
@@ -683,9 +683,9 @@ def test_cmd_connection_no_tunnel():
 
 def test_multihop():
     user1 = properties.UserInfo(username='learner',
-                                                  password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+                                                  password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     hops = [
-            {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'textingcanwait'},
+            {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'mypassword'},
             {'host': '127.0.0.1', 'user': user1},
             {'user': user1, 'proto': 'command', 'cmd': 'telnet 127.0.0.1', 'can_change_prompt': False}
           ]
@@ -711,9 +711,9 @@ def test_multihop():
 
 def test_multihop_hostname_interface():
     user1 = properties.UserInfo(username='learner',
-                                                  password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+                                                  password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     hops = [
-            {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'textingcanwait'},
+            {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'mypassword'},
             {'host': '127.0.0.1', 'user': user1},
             {'user': user1, 'proto': 'command', 'cmd': 'telnet 127.0.0.1', 'can_change_prompt': False}
           ]
@@ -740,10 +740,10 @@ def test_multihop_hostname_interface():
 
 def test_multihop_tunnel_tunnel_defined():
     user1 = properties.UserInfo(username='learner',
-                                                  password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+                                                  password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     tunnel = dict(name='t1',
                   hops=[
-                      {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'textingcanwait'},
+                      {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'mypassword'},
                       {'host': '127.0.0.1', 'user': user1, 'proto': 'telnet'},
                       {'host': '127.0.0.1', 'user': user1}
                   ])
@@ -763,10 +763,10 @@ def test_multihop_tunnel_tunnel_defined():
             raise
 
 def test_multihop_tunnel_tunnel_by_name():
-    user1 = properties.UserInfo(username='learner', password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(username='learner', password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     tunnel = dict(
                   hops=[
-                      {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'textingcanwait'},
+                      {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'mypassword'},
                       {'host': '127.0.0.1', 'user': user1, 'proto': 'telnet'},
                       {'host': '127.0.0.1', 'user': user1}
                   ])
@@ -788,9 +788,9 @@ def test_multihop_tunnel_tunnel_by_name():
 
 
 def test_multihop_mix_proto_tunnel_as_list_of_hops():
-    user1 = properties.UserInfo(username='learner', password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(username='learner', password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     hops = [
-        {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'textingcanwait'},
+        {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'mypassword'},
         {'host': '127.0.0.1', 'user': user1, 'proto': 'telnet'},
         {'host': '127.0.0.1', 'user': user1}
     ]
@@ -816,10 +816,10 @@ def test_multihop_mix_proto_tunnel_as_list_of_hops():
 
 
 def test_multihop_tunnel_default_tunnel():
-    user1 = properties.UserInfo(username='learner', password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(username='learner', password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     tunnel = dict(
                   hops=[
-                      {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'textingcanwait'},
+                      {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'mypassword'},
                       {'host': '127.0.0.1', 'user': user1, 'proto': 'telnet'},
                       {'host': '127.0.0.1', 'user': user1}
                   ])
@@ -848,9 +848,9 @@ def test_multihop_tunnel_default_tunnel():
 
 def test_multihop_tunnel_proto_tunnel_as_name():
     user1 = properties.UserInfo(username='learner',
-                                                  password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+                                                  password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     hops = [
-        {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'textingcanwait'},
+        {'host': '127.0.0.1', 'user': user1, 'port': 922, 'password': 'mypassword'},
         {'host': '127.0.0.1', 'user': user1},
         {'host': '127.0.0.1', 'user': user1}
     ]
@@ -877,7 +877,7 @@ def test_saving_restoring_connections_multihop_to_db():
     update_db_config()
 
     user1 = properties.UserInfo(username='learner',
-                                                  password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+                                                  password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
     jump_boxes = [
             {'host': '127.0.0.1', 'user': user1, 'port': 922},
             {'host': '127.0.0.1', 'user': user1},
@@ -919,7 +919,7 @@ def test_saving_restoring_connections_multihop_to_db_reload():
     update_db_config(False, False)
 
     user1 = properties.UserInfo(username='learner',
-                                                  password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+                                                  password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
 
     t0 = time.time()
     d2 = Device.get_by_host('localhost')
@@ -937,8 +937,8 @@ def test_saving_restoring_connections_multihop_to_db_reload():
 def test_remove_user_related_info_from_connection():
 
     DEF_CONN_DICT = dict(proto='ssh', port=922, username='user2',
-                         password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
-    user1 = properties.UserInfo(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ')
+                         password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
+    user1 = properties.UserInfo(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ')
 
     d = DeviceBase('localhost', connections=dict(ssh=DEF_CONN_DICT), users=dict(learner=user1))
     d.os.can_change_prompt = False
@@ -951,8 +951,8 @@ def test_opening_closing_wihtout_context():
     connections = {'ssh': {'user': 'learner', 'port': 922},  # default user for ssh will be learner
                    'telnet': {'user': 'learner'},  # default user for telnet will be mysshuser
                    'default_name': 'ssh'}
-    users = {'learner': {'password': 'textingcanwait'},
-             'mysshuser': {'password': 'textingcanwait'},
+    users = {'learner': {'password': 'mypassword'},
+             'mysshuser': {'password': 'mypassword'},
              'default_name': 'mysshuser'}
 
     d = DeviceBase('localhost', connections=connections, users=users)
@@ -965,8 +965,8 @@ def test_mixed_default_values_user_conn():
     connections = {'ssh': {'user': 'default', 'port': 922},  # default user for ssh will be default (username is learner)
                    'telnet': {'user': 'mysshuser'},  # default user for telnet will be mysshuser
                    'default_name': 'ssh'}
-    users = {'default': {'password': 'textingcanwait', 'username': 'learner'},
-             'mysshuser': {'password': 'textingcanwait'},
+    users = {'default': {'password': 'mypassword', 'username': 'learner'},
+             'mysshuser': {'password': 'mypassword'},
              'default_name': 'mysshuser'}
     d = DeviceBase('localhost', connections=connections, users=users)
     d.conn.open()
@@ -976,8 +976,8 @@ def test_mixed_default_values_user_conn():
 
 
 def test_tunnel_open_sockets():
-    users = {'default': {'password': 'textingcanwait', 'username': 'learner'},
-             'mysshuser': {'password': 'textingcanwait'},
+    users = {'default': {'password': 'mypassword', 'username': 'learner'},
+             'mysshuser': {'password': 'mypassword'},
              'default_name': 'mysshuser'}
     connections = {'ssh': {'user': 'default'},  # default user for ssh will be default (username is learner)
                    'telnet': {'user': 'mysshuser'},  # default user for telnet will be mysshuser

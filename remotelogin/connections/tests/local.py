@@ -49,7 +49,7 @@ with t:
 print([to[i]-to[0] for i in range(len(to))])
 # on windows plink takes some time to start
 plink_connect_timeout = 2
-rdo_conn = SshConnection('localhost', username='learner', password='textingcanwait',
+rdo_conn = SshConnection('localhost', username='learner', password='mypassword',
                          port=922, connect_timeout=plink_connect_timeout).through(local)
 with rdo_conn:
     print(rdo_conn.check_output('ls -lt'))

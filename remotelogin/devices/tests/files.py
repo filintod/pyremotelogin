@@ -3,7 +3,7 @@ import pytest
 from remotelogin.devices.base import DeviceBase
 from remotelogin.devices.base_db import Device
 
-DEF_CONN_DICT = dict(proto='ssh', user=dict(username='learner', password='textingcanwait'), port=922,
+DEF_CONN_DICT = dict(proto='ssh', user=dict(username='learner', password='mypassword'), port=922,
                      expected_prompt=r'{username}@.+?:~\$ ')
 
 
@@ -11,15 +11,15 @@ DEF_CONN_DICT_KEY = dict(proto='ssh', user=dict(username='mysshuser', key_filena
                          expected_prompt=r'{username}@.+?:~\$ ')
 
 DEF_CONN_DICT_KEY_ENC = dict(proto='ssh', port=922,
-                             user=dict(username='mysshuser', key_filename='my_priv_key_enc', key_password='textingcanwait'),
+                             user=dict(username='mysshuser', key_filename='my_priv_key_enc', key_password='mypassword'),
                              expected_prompt=r'{username}@.+?:~\$ ')
 
 
-DEF_TELNET_CONN_DICT = dict(proto='telnet', user=dict(username='learner', password='textingcanwait'), port=923,
+DEF_TELNET_CONN_DICT = dict(proto='telnet', user=dict(username='learner', password='mypassword'), port=923,
                             expected_prompt=r'{username}@.+?:~\$ ')
 
-USERS = dict(learner=dict(password='textingcanwait', expected_prompt=r'{username}@.+?:~\$ ', username='learner'),
-             mysshuser=dict(password='textingcanwait', key_filename='my_priv_key_enc', key_password='textingcanwait',
+USERS = dict(learner=dict(password='mypassword', expected_prompt=r'{username}@.+?:~\$ ', username='learner'),
+             mysshuser=dict(password='mypassword', key_filename='my_priv_key_enc', key_password='mypassword',
                             expected_prompt=r'{username}@.+?:~\$ ', username='mysshuser'))
 
 import os
@@ -45,7 +45,7 @@ def test_put_file_without_ready_to_use_open_conn_for_a_user():
     conn_info = dict(DEF_CONN_DICT)
     d = DeviceBase('localhost',
                    connections=dict(default=conn_info),
-                   users={'mysshuser': {'password': 'textingcanwait'}})
+                   users={'mysshuser': {'password': 'mypassword'}})
     d.files.put(os.path.join(files_folder, 'conn_settings.yaml'), user='mysshuser')
 
     with d.conn.open(user='mysshuser') as conn:

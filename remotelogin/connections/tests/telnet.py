@@ -4,7 +4,7 @@ from ..telnet import TelnetConnection
 from ..ssh import SshConnection
 from ..terminal import TerminalConnection
 
-user=dict(username='learner', password='textingcanwait', expected_prompt= 'learner\\@ltduran\\:\\~\\$\\ ')
+user=dict(username='learner', password='mypassword', expected_prompt= 'learner\\@learner\\:\\~\\$\\ ')
 
 
 class TelnetTests(unittest.TestCase):
@@ -23,7 +23,7 @@ class TelnetTests(unittest.TestCase):
             res = conn.send_cmd('ifconfig').expect_all('RX', 'TX')
 
         NEW_SSH_USERNAME = 'mysshuser'
-        PASSWORD = 'textingcanwait'
+        PASSWORD = 'mypassword'
 
         with conn as term:
             print(term.check_sudo_output('useradd -m -d /home/{NEW_SSH_USERNAME} {NEW_SSH_USERNAME}'
@@ -37,7 +37,7 @@ class TelnetTests(unittest.TestCase):
     def test_multihop(self):
         hop1 = SshConnection(host="127.0.0.1", port=922, **user)
         hop2 = TelnetConnection(host="127.0.0.1", connect_timeout=0.4, **user)
-        hop3 = SshConnection(host="127.0.0.1", username="learner", password="textingcanwait", connect_timeout=0.4)
+        hop3 = SshConnection(host="127.0.0.1", username="learner", password="mypassword", connect_timeout=0.4)
 
         multihop = TerminalConnection(SshConnection('127.0.0.1', port=922, **user),
                                   SshConnection('127.0.0.1', connect_timeout=0.4, **user))
