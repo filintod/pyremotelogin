@@ -506,7 +506,7 @@ def utc_now():
     return datetime.utcnow().replace(microsecond=0)
 
 
-def md5_checksum_stream(s):
+def md5_checksum_stream(s, buffer_size=8192):
     """ calculate md5 for a stream in case of a large file that cannot be hold in memory
 
     :param s: stream
@@ -515,7 +515,7 @@ def md5_checksum_stream(s):
     import hashlib
     m = hashlib.md5()
     while True:
-        data = s.read(8192)
+        data = s.read(buffer_size)
         if not data:
             break
         m.update(data)

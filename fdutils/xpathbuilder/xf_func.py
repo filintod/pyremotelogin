@@ -33,7 +33,7 @@ def _xf(f_name, node, *values, **kwargs):
 
     if insensitive:
         # make mutable
-        values = list([str(v).lower() for v in values])
+        values = [str(v).lower() for v in values]
         node_string = translate_lower(node_string)
 
     for i, v in enumerate(values):

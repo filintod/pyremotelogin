@@ -21,13 +21,18 @@ class DeviceDeclarativeBase(db.DeclarativeBase):
             d.conn
             return d
         except Exception:
-            log.warning('Problems Loading Device: We are probably trying to load a device that did not load properly '
-                        'probably because of bad encryption password. Check your password, change it and save/reload')
+            log.warning(
+                "Problems Loading Device: We are probably trying to load a device that did not load properly or is not found "
+                "probably because of bad encryption password. Check your password, change it and save/reload"
+            )
             return d
 
     @classmethod
     def get_by_hostname(cls, host):
-        return cls._return_device_if_conn_present(cls.query.filter_by(host=host).first())
+        return cls._return_device_if_conn_present(
+            cls.query.filter_by(host=host).first()
+        )
+
     get_by_host = get_by_hostname
 
     @classmethod
@@ -43,9 +48,13 @@ class DeviceDeclarativeBase(db.DeclarativeBase):
         data = item_manager.make_serializable()
 
         if self.encrypt_passwords:
-            transform_password(data, lambda value: self.crypto_engine.encrypt(value).decode(
-                encoding=settings.DECODE_ENCODING_TYPE, errors=settings.DECODE_ERROR_ARGUMENT_VALUE
-            ))
+            transform_password(
+                data,
+                lambda value: self.crypto_engine.encrypt(value).decode(
+                    encoding=settings.DECODE_ENCODING_TYPE,
+                    errors=settings.DECODE_ERROR_ARGUMENT_VALUE,
+                ),
+            )
 
         return data
 
@@ -64,10 +73,11 @@ class Device(DeviceWithEncryptionSettings, DeviceDeclarativeBase):
 
         Passwords by default will be encrypted
     """
-    __tablename__ = 'devices'
+
+    __tablename__ = "devices"
 
 
-@event.listens_for(Device, 'refresh')
+@event.listens_for(Device, "refresh")
 def receive_refresh(target, context, attrs):
     target.init()
 

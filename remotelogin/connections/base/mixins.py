@@ -16,6 +16,8 @@ class CanExecuteCommands:
 
     def _get_cmd(self, cmd, use_sudo, stderr_to_tmp):
 
+        cmd = cmd.strip()
+
         if stderr_to_tmp or getattr(self, 'stderr_to_tmp', False):
             err_file = self.current.os.path().join(self.current.os.temp, 'stderr_' + fdutils.crypto.base64_hash(cmd)[:50])
 
