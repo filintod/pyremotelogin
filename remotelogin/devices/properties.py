@@ -247,7 +247,7 @@ class TunnelInfo(WithSlots):
         if user is None:
             if proto in ("ssh", "telnet"):
                 raise ValueError(
-                    "There are problems in the definition of user in connection ({})".format(
+                    "For SSH/Telnet you need to define the user information hop ({})".format(
                         hop
                     )
                 )
@@ -490,6 +490,7 @@ class ConnectionInfo:
         if tunnel:
             kwargs["tunnel"] = list(tunnel.get_connections())
 
+    # TODO: database of user to connection prompt found
     def new_open_instance(self, user, instance_name, tunnel, interface, **conn_kwargs):
 
         kwargs = dict(self.kwargs)
@@ -517,6 +518,10 @@ class ConnectionInfo:
                 self.manager.users[user.name].expected_prompt = gral_prompt
 
             self.expected_prompt = gral_prompt
+            len_hops = len(self.tunnel.hops)
+            if len_hops:
+                for i, terminal in reversed(list(enumerate(instance._terminals[:-1]))):
+                    self.tunnel.hops[i]['user'].expected_prompt = terminal.shell.expected_prompt
 
         self.data[instance_name].append(instance.data)
 

@@ -100,11 +100,11 @@ class LocalConnection(term.ConnectionWithTerminal, mixins.CanExecuteCommands, mi
         return base_set | specific
 
     def _is_active(self):
-        return self._transport and self._transport.poll() is None
+        return self.transport and self.transport.poll() is None
 
     def _close_transport(self):
         try:
-            self._transport.terminate()
+            self.transport.terminate()
         except:
             pass
 

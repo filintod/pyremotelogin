@@ -151,7 +151,7 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
                                                       backend=default_backend())
 
     def _set_default_credentials(self, kwargs):
-        self._transport.set_missing_host_key_policy(self.key_policy)
+        self.transport.set_missing_host_key_policy(self.key_policy)
         defaults = {}
 
         if not self.key_filename:
@@ -194,9 +194,9 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         """ Opens an SSH connection.
 
         """
-        self._transport = paramiko.SSHClient()
+        self.transport = paramiko.SSHClient()
 
-        if not self._transport:
+        if not self.transport:
             raise ConnectionError
 
         else:
@@ -209,8 +209,8 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
                     kwargs['sock'] = self.open_proxyjump()
 
                 def connect():
-                    self._transport.connect(self.host, **kwargs)
-                    self._paramiko_transport = self._transport.get_transport()
+                    self.transport.connect(self.host, **kwargs)
+                    self._paramiko_transport = self.transport.get_transport()
 
                 if hasattr(self.os, 'monkey_patch_ssh'):
                     with self.os.monkey_patch_ssh():
@@ -274,7 +274,7 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         return stdin, stdout, stderr, chan
 
     def _close_transport(self):
-        self._transport.close()
+        self.transport.close()
         self._paramiko_transport = None
         try:
             if self.proxy_jump:
@@ -304,7 +304,7 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         return out.read().decode()
 
     def _open_terminal_channel(self, **kwargs):
-        return SshTerminalChannel(self, self._transport.invoke_shell(), **kwargs)
+        return SshTerminalChannel(self, self.transport.invoke_shell(), **kwargs)
 
     @contextlib.contextmanager
     def _get_ftp_client(self, window_size=None, max_packet_size=None, buffer_size=None):

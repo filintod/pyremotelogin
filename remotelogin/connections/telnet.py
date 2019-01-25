@@ -35,7 +35,7 @@ class TelnetConnectionUnwrapped(term.IPConnectionWithTerminal):
 
     def _is_active(self):
         try:
-            self._transport.sock.sendall(telnetlib.IAC + telnetlib.NOP)
+            self.transport.sock.sendall(telnetlib.IAC + telnetlib.NOP)
             return True
         except Exception:
             pass
@@ -70,7 +70,7 @@ class TelnetConnectionUnwrapped(term.IPConnectionWithTerminal):
             else:
                 raise ConnectionError('could not connect did not find the Password prompt')
 
-        self._transport = client
+        self.transport = client
         self._is_open = True
 
         return self
@@ -85,7 +85,7 @@ class TelnetConnectionUnwrapped(term.IPConnectionWithTerminal):
             raise ConnectionError('could not connect as did not find expected username or login prompt pattern')
 
     def set_keepalive(self, interval=settings.SOCKET_KEEPALIVE_PERIOD, transport=None):
-        transport = transport or self._transport
+        transport = transport or self.transport
         net.set_socket_keepalive(transport.sock, interval)
 
     def _get_shell_and_conn_string(self, parent=None, **kwargs):

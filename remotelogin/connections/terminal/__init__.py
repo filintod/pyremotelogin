@@ -288,16 +288,16 @@ class TerminalConnection(
 
         self.connections[self._start_connection_idx].open()
         kwargs = fdutils.lists.setdefault(kwargs, self.__base_chan_kwargs)
-        self._transport = self.connections[
+        self.transport = self.connections[
             self._start_connection_idx
         ].open_terminal_channel(**kwargs)
-        self._transport.set_keepalive(settings.SOCKET_KEEPALIVE_PERIOD)
+        self.transport.set_keepalive(settings.SOCKET_KEEPALIVE_PERIOD)
         if self._data_stream_func and not self.data_stream:
             self.data_stream = self._data_stream_func()
 
         self._setup_login_and_prompt(
-            self._transport,
-            "Starting Terminal Session with " + self._transport.conn.host,
+            self.transport,
+            "Starting Terminal Session with " + self.transport.conn.host,
         )
         return idx or 1
 
@@ -375,8 +375,8 @@ class TerminalConnection(
             self._terminals = []
             self.last_cmd_sent = ""
 
-            if self._transport and self._close_base_on_exit:
-                self._transport.close()
+            if self.transport and self._close_base_on_exit:
+                self.transport.close()
 
         except Exception:
             log.exception("problems closing terminal transport")
@@ -391,7 +391,7 @@ class TerminalConnection(
         return self
 
     def _is_active(self):
-        return self.is_open and self._transport.is_active()
+        return self.is_open and self.transport.is_active()
 
     @property
     def os(self):
@@ -400,7 +400,7 @@ class TerminalConnection(
     @property
     def host(self):
         try:
-            return self._transport.conn.host
+            return self.transport.conn.host
         except AttributeError:
             log.warning("trying to get host from not opened terminal")
             return None
@@ -465,7 +465,7 @@ class TerminalConnection(
             remove ansi codes if present, record the data to the data_stream
             and return the data received
         """
-        data = self._transport.recv(buffer_size or self.buffer_size)
+        data = self.transport.recv(buffer_size or self.buffer_size)
         if data:
             data = fdutils.regex.strip_ansi_codes_from_buffer(data)
             # data = MULTILINE_REDUCER.sub(data, r"\n")
@@ -861,7 +861,7 @@ class TerminalConnection(
             if not cmd or cmd[-len(self.new_line)] != self.new_line:
                 cmd += self.new_line
 
-        self._transport.send(cmd)
+        self.transport.send(cmd)
         self.last_cmd_sent = cmd
         self.data.new_sent(
             cmd,
@@ -1250,7 +1250,7 @@ class TerminalConnection(
                     log.error(
                         "Did not receive any data before the socket timeout ({}). Increase the timeout or "
                         "check the command or system under test.".format(
-                            str(self._transport.timeout)
+                            str(self.transport.timeout)
                         )
                     )
                     raise ConnectionError

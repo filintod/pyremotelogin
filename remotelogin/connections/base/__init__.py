@@ -28,7 +28,7 @@ class Connection:
         self.data = None
         self.buffer_size = settings.BUFFER_SIZE
 
-        self._transport = None
+        self.transport = None
         self._is_open = False
         self._unbuffered = unbuffered_stream
         self._remove_empty_on_stream = remove_empty_on_stream
@@ -127,13 +127,13 @@ class Connection:
             with self.lock:
                 if self._is_open:
                     self._is_open = False
-                    if self._transport:
+                    if self.transport:
                         try:
                             self._close_transport()
                         except:
                             log.exception("Problems closing: " + str(self))
 
-                    self._transport = None
+                    self.transport = None
 
     __del__ = close
 
@@ -153,7 +153,7 @@ class Connection:
     def _close_transport(self):
         """ Close real instance (paramiko, TELNET or cmd)
         """
-        self._transport.close()
+        self.transport.close()
 
     @decorators.must_be_close
     def through(self, conn):
