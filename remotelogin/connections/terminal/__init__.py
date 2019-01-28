@@ -761,7 +761,9 @@ class TerminalConnection(
         try:
             yield
         finally:
-            self.send_cmd(exit_cmd).expect_new_prompt(curr_prompt)
+            if exit_cmd:
+                self.send_cmd(exit_cmd)
+            self.expect_new_prompt(curr_prompt)
 
     def get_conversation_list(self):
         return self.data.get_timed_conversation_list()

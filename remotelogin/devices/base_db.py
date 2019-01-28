@@ -21,7 +21,7 @@ class DeviceDeclarativeBase(db.DeclarativeBase):
             d.conn
             return d
         except Exception:
-            log.warning(
+            log.debug(
                 "Problems Loading Device: We are probably trying to load a device that did not load properly or is not found "
                 "probably because of bad encryption password. Check your password, change it and save/reload"
             )
