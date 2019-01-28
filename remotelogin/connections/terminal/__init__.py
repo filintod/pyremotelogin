@@ -762,7 +762,7 @@ class TerminalConnection(
             yield
         finally:
             if exit_cmd:
-                self.send_cmd(exit_cmd)
+                self.send("\n").send_cmd(exit_cmd)
             self.expect_new_prompt(curr_prompt)
 
     def get_conversation_list(self):
@@ -1084,6 +1084,13 @@ class TerminalConnection(
         if set_unique_prompt:
             self.set_unique_prompt()
 
+        return self
+
+    def expect_different_prompt(self, new_prompt=None, set_unique_prompt=False, timeout=0):
+        curr_prompt = self.prompt
+        self.expect_new_prompt(new_prompt, set_unique_prompt, timeout)
+        if curr_prompt == self.prompt:
+            raise exceptions.PromptNotFoundError("the new prompt is the same as the old prompt")
         return self
 
     def find_login_info(self, terminal):
