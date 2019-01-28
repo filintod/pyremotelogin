@@ -28,6 +28,8 @@ def default_json(o, encrypt=False, crypto_engine=None):
     str_classes = UUID, ipaddress._IPAddressBase
 
     if any(isinstance(o, str_cls) for str_cls in str_classes):
+        if o is None:
+            return None
         return str(o)
 
     if hasattr(o, 'to_json'):

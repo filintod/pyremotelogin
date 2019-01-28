@@ -130,7 +130,7 @@ class ExpectPasswordAndResponse(ExpectAndResponse):
 
 
 class ExpectUsernameAndResponse(ExpectAndResponse):
-    def __init__(self, response, expect=r'(username|login)\s?\:\s*$', hidden=False, required=True, name='username'):
+    def __init__(self, response, expect=r'(username|login)\s?\:\s*$', hidden=False, required=False, name='username'):
         super().__init__(expect, response, required=required, hidden=hidden, name=name)
 
 

@@ -208,7 +208,7 @@ class ConnectionsManager(ManagerWithItems):
                 del self.open_instances[name]
 
     def _get_instance_name_augmented(self, instance_name, user_or_username=None, tunnel=None, interface=None):
-        if user_or_username is None:
+        if not user_or_username:
             user_or_username = self.users.default
 
         tunnel_name = tunnel or self.tunnels.default.name if self.tunnels.items() else 'default'
