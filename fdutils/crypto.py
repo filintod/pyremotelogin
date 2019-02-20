@@ -70,7 +70,6 @@ class SecuredTextEngine:
         if not password and 'vault' in environment_settings:
             password_file = environment_settings['vault'].get('password_file', None)
             password_script = environment_settings['vault'].get('password_script', None)
-            password_prompt = bool(environment_settings['vault'].get('prompt_for_password', False))
 
             if password_file:
                 password = get_password_from_file(password_file)
@@ -78,9 +77,9 @@ class SecuredTextEngine:
             elif password_script:
                 password = get_password_from_script(password_script)
 
-            elif password_prompt:
+            else:
                 import getpass
-                password = getpass.getpass()
+                password = getpass.getpass("Password to encrypt/decrypt credentials in DB: ").encode()
 
             salt_file = environment_settings['vault'].get('salt_file', None)
             if salt_file:
