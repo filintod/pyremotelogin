@@ -1246,6 +1246,7 @@ class TerminalConnection(
         timer = fdutils.timer.get_timer_from_timeout(timeout or self.timeout)
 
         match_found = False
+        recv = 0
         while not (match_found or timer.has_expired or self.stop_signal.is_set()):
 
             try:

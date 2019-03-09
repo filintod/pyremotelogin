@@ -36,7 +36,7 @@ DEFAULT_PROMPT_RESPONSE = None
 
 
 class ExpectAndResponse:
-    def __init__(self, expect, response, required=False, hidden=False, name='', flags=re.I, index=0, count=1,
+    def __init__(self, expect, response, required=False, hidden=False, name='', flags=re.I|re.M, index=0, count=1,
                  require=False, **kwargs):
         """
 
