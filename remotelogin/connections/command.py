@@ -1,5 +1,7 @@
 import logging
 
+from remotelogin.connections.base import mixins
+
 from fdutils.strings import is_fieldname_in_formatted_string
 
 from .terminal import channel
@@ -11,7 +13,7 @@ log = logging.getLogger(__name__)
 __author__ = 'Filinto Duran (duranto@gmail.com)'
 
 
-class CommandConnection(term.ConnectionWithTerminal):
+class CommandConnection(term.ConnectionWithTerminal, mixins.CanExecuteCommands,):
     """ connection that is purely text based like when doing telnet from an ssh session """
 
     ARGUMENTS_ALLOWED = term.ConnectionWithTerminal.ARGUMENTS_ALLOWED + ('cmd', 'username', 'password')
@@ -30,6 +32,9 @@ class CommandConnection(term.ConnectionWithTerminal):
 
     def _open_transport(self, **kwargs):
         pass
+
+    def _close_transport(self):
+        self.send
 
     def _get_shell_and_conn_string(self, **kwargs):
         kwargs.pop('parent', None)

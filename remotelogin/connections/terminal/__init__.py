@@ -16,7 +16,7 @@ from remotelogin.connections import constants, decorators
 
 from io import StringIO
 
-from remotelogin.connections.terminal import shells
+from remotelogin.connections.terminal import shells, channel
 from remotelogin.connections import settings, expect, exceptions, base
 import fdutils
 
@@ -354,11 +354,15 @@ class TerminalConnection(
         try:
             curr = self.current
 
+            # send exit
+            self.send_cmd(curr.os.cmd.exit())
+
             if (
-                self.use_unique_prompt
-                and curr.shell.can_change_prompt
-                and curr.os.reset_prompt_on_exit
-                and curr.os.default_prompt
+                    self.use_unique_prompt
+                    and isinstance(curr, channel.TerminalChannel)
+                    and curr.shell.can_change_prompt
+                    and curr.os.reset_prompt_on_exit
+                    and curr.os.default_prompt
             ):
                 try:
                     self.set_prompt(new_prompt=curr.os.default_prompt)
@@ -368,10 +372,6 @@ class TerminalConnection(
                             curr.os.default_prompt
                         )
                     )
-
-            # send exit
-            self.send_cmd(curr.os.cmd.exit)
-
             self._terminals = []
             self.last_cmd_sent = ""
 
