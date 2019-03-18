@@ -113,15 +113,13 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
                                                           timeout=timeout)
 
     def _set_default_credentials_all(self, kwargs, defaults):
+        if self.key_filename and not defaults.get('pkey'):
+            defaults['key_filename'] = self.key_filename
 
-        if self.key_filename:
-            if not defaults.get('pkey'):
-                defaults['key_filename'] = self.key_filename
-        else:
-            defaults['password'] = self.password
+        defaults['password'] = self.password
 
         fdutils.lists.setdefault_inplace(kwargs, username=self.username, port=self.port, timeout=self.connect_timeout,
-                                       **defaults)
+                                         **defaults)
 
         if not kwargs['username']:
             raise NoDefaultUserError('Username has not been defined for this connection!!!')
@@ -147,7 +145,8 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives import serialization
         with open(filepath, "rb") as key_file:
-            return serialization.load_pem_private_key(key_file.read(), password=filekey.encode(),
+            return serialization.load_pem_private_key(key_file.read(),
+                                                      password=filekey.encode(),
                                                       backend=default_backend())
 
     def _set_default_credentials(self, kwargs):
@@ -159,15 +158,14 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
             defaults['look_for_keys'] = False
 
         else:
-            password = self.key_password or self.password
             try:
-                defaults['pkey'] = paramiko.RSAKey.from_private_key_file(self.key_filename, password=password)
+                defaults['pkey'] = paramiko.RSAKey.from_private_key_file(self.key_filename, password=self.key_password)
 
             except paramiko.ssh_exception.SSHException:
                 if self.key_password:
                     try:
                         defaults['pkey'] = paramiko.RSAKey(key=self._try_cryptography_direct_pkey(self.key_filename,
-                                                                                                  password))
+                                                                                                  self.key_password))
                     except Exception:
                         log.exception('problems with key or file type')
                         raise BadSshKeyPasswordError('Your password might be wrong for this key file ({})'

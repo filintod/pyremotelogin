@@ -79,7 +79,7 @@ def _get_settings_loaded_and_check_settings_exists(ext, found, test_envi_setting
     if ext == '.json':
         loader = json.load
     elif ext in ('.yaml', '.yml'):
-        loader = yaml.load
+        loader = yaml.safe_load
     else:
         raise ValueError("This settings file ({}) has an extension that we don't know how to parse.\n"
                          "The only extensions we can handle are (.json, .yaml and .yml"
@@ -172,7 +172,7 @@ def get_file_to_open(config_folder, f):
 
 
 # TODO: include toml/json file as config file
-def parse_yaml(config_file_path, base_name='bases', safe=False, replace_list=True):
+def parse_yaml(config_file_path, base_name='bases', safe=True, replace_list=True):
     """     recursively retrieves configuration from yaml files
 
     Args:

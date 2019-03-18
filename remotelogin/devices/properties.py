@@ -72,8 +72,8 @@ class UserInfo(WithSlots):
 
     def __init__(
         self,
-        username="",
-        password="",
+        username=None,
+        password=None,
         fullname="",
         id=None,
         key_filename=None,

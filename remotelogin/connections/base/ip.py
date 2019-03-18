@@ -17,7 +17,7 @@ class IPConnection(Connection):
     AUTHENTICATION_KEYS_COMBINATIONS = (('username',), ('password',), ('username', 'password'))
     ARGUMENTS_ALLOWED = Connection.ARGUMENTS_ALLOWED + ('host', 'port') + AUTHENTICATION_KEYS
 
-    def __init__(self, host='', username='', password='', port=None, **kwargs):
+    def __init__(self, host='', username=None, password=None, port=None, **kwargs):
         """
         :param str host: IP or hostname of connection
         :param int port: layer 4 port number of server

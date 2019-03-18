@@ -351,6 +351,8 @@ class TerminalConnection(
         return self
 
     def _close_transport(self):
+        if not self.transport:
+            return
         try:
             curr = self.current
 
