@@ -23,6 +23,7 @@ def v_to_str(value):
 
 
 class WithSlots:
+
     @classmethod
     def check_args_from_dict(cls, cls_dict):
         if any([k not in cls.__slots__ for k in cls_dict]):
@@ -33,8 +34,10 @@ class WithSlots:
 
     def copy(self):
         import copy
-
         return copy.copy(self)
+
+    def as_dict(self):
+        return {k: getattr(self, k) for k in self.__slots__}
 
     @classmethod
     def get_cls_kwargs(cls, kwargs):
