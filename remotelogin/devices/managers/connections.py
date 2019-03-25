@@ -102,7 +102,7 @@ class OpenConnectionInstance:
             if self.__tunnel:
                 self.__conn.send_cmd('exit')
             self.__conn.close()
-            self.__is_close = True
+
 
 
 class ConnectionsManager(ManagerWithItems):
@@ -202,8 +202,12 @@ class ConnectionsManager(ManagerWithItems):
         """ delete open connection instance and if there are no more open instances for a connection it removes
             the reference key from the open_instances dictionary
         """
+        if name not in self.open_instances:
+            log.debug(name + " connection was tried to be closed but is not present")
+            return
         with self._get_connection_instance_lock(name, instance):
-            del self.open_instances[name][instance]
+            if instance in self.open_instances[name]:
+                del self.open_instances[name][instance]
             if not self.open_instances[name]:
                 del self.open_instances[name]
 
