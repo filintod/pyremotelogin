@@ -59,12 +59,10 @@ class OpenConnectionInstance:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if not self.__is_close:
-            self.__close()
+        self.__close()
 
     def __del__(self):
-        if not self.__is_close:
-            self.__close()
+        self.__close()
 
     def __getattr__(self, item):
         if not item.startswith('_OpenConnectionInstance'):
@@ -97,12 +95,13 @@ class OpenConnectionInstance:
 
     # TODO: use os cmd to exit instead of hardcoded exit cmd
     def __close(self):
-        if self.__conn:
-            self.__manager._delete_open_connection_instance(self.conn_name, self.instance_name)
-            if self.__tunnel:
-                self.__conn.send_cmd('exit')
-            self.__conn.close()
-            self.__is_close = True
+        if not self.__conn or self.__is_close:
+            return
+        self.__manager._delete_open_connection_instance(self.conn_name, self.instance_name)
+        if self.__tunnel:
+            self.__conn.send_cmd('exit')
+        self.__conn.close()
+        self.__is_close = True
 
 
 class ConnectionsManager(ManagerWithItems):
@@ -358,7 +357,7 @@ class ConnectionsManager(ManagerWithItems):
         self._items[name] = ConnectionInfo(proto, name, self, user, **conn_arguments)
 
         if is_default:
-            self._default_item_name = name
+            self._default_item_name = name or self.DEFAULT_INSTANCE_NAME
 
     add_telnet = partialmethod(add, 'telnet')
     add_ssh = partialmethod(add, 'ssh')
