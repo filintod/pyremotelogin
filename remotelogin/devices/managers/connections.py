@@ -85,6 +85,7 @@ class OpenConnectionInstance:
         return self._user.expected_prompt
 
     def __open(self):
+        log.debug("Opening conn {} instance {}".format(self.conn_name, self.instance_name))
         self.__conn, self.conn_name, self._user, self.instance_name = \
             self.__manager._open(self._user, self.conn_name, self.instance_name,
                                  self.__other_conn_args, self.__tunnel, self.__interface)
@@ -113,7 +114,7 @@ class ConnectionsManager(ManagerWithItems):
     ItemTypeName = 'connections'
 
     def __init__(self, *args, **kwargs):
-        self._open_instances = threading.local()
+        self._open_instances = {}
         self._conn_locks = {}
         self.default_tunnel = kwargs.pop('default_tunnel', '')
         super(ConnectionsManager, self).__init__(*args, **kwargs)
@@ -127,10 +128,7 @@ class ConnectionsManager(ManagerWithItems):
 
     @property
     def open_instances(self):
-        """ lazy create thread local _open_instances object """
-        if not self._open_instances.__dict__:
-            self._open_instances.conn = {}
-        return self._open_instances.conn
+        return self._open_instances
 
     def make_serializable(self):
         data = super().make_serializable()
@@ -202,7 +200,7 @@ class ConnectionsManager(ManagerWithItems):
             the reference key from the open_instances dictionary
         """
         if name not in self.open_instances:
-            log.debug(name + " connection was tried to be closed but is not present")
+            log.debug(name + " connection was tried to be closed but is not present " + str(self.open_instances))
             return
         with self._get_connection_instance_lock(name, instance):
             if instance in self.open_instances[name]:
@@ -281,7 +279,7 @@ class ConnectionsManager(ManagerWithItems):
         self.open_instances[open_instance.conn_name][open_instance.instance_name] = open_instance
 
         log.debug('Connection {} with instance name {} and user {} was open successfully'
-                  ''.format(open_instance.conn_name, instance_name, user))
+                  ''.format(open_instance.conn_name, instance_name, user or self.users.default))
 
         return open_instance
 
@@ -295,6 +293,7 @@ class ConnectionsManager(ManagerWithItems):
                                                           username, tunnel=tunnel, interface=interface)
 
         try:
+            log.debug("Closing open conn {} instance {}".format(name, instance_name))
             self.open_instances[name][instance_name].close()
         except KeyError as e:
             msg = 'Cannot close unknown connection name "{}" with instance "{}"'.format(name, instance_name)
