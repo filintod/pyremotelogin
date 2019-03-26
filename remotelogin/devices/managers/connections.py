@@ -102,7 +102,7 @@ class OpenConnectionInstance:
             if self.__tunnel:
                 self.__conn.send_cmd('exit')
             self.__conn.close()
-
+            self.__is_close = True
 
 
 class ConnectionsManager(ManagerWithItems):
