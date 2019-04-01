@@ -100,17 +100,29 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         except AttributeError:
             return False
 
+    def open_tunnel(self, host, port, timeout=None, src_host='', src_port=0):
+        error_msg = "Tunnel could not be created to {}:{}".format(host, port)
+        try:
+            tunnel = self.ssh_transport.open_channel(kind='direct-tcpip',
+                                                     dest_addr=(host, int(port)),
+                                                     src_addr=(src_host, src_port),
+                                                     timeout=timeout)
+        except Exception:
+            log.exception(error_msg)
+            raise ConnectionError
+
+        else:
+            if tunnel is None:
+                log.error(error_msg)
+                raise ConnectionError
+
+            return tunnel
+
     def open_proxyjump(self, connect_timeout=None):
-        """ based on fabric2 open_gateway method
-        https://github.com/fabric/fabric/connection.py
-        Copyright (c) 2017 Jeff Forcier. All rights reserved.
-        """
+        """ goes through tunnel """
         self.proxy_jump.open()
         timeout = connect_timeout if connect_timeout is not None else self.connect_timeout
-        return self.proxy_jump.ssh_transport.open_channel(kind='direct-tcpip',
-                                                          dest_addr=(self.host, int(self.port)),
-                                                          src_addr=('', 0),
-                                                          timeout=timeout)
+        return self.proxy_jump.open_tunnel(self.host, self.port, timeout)
 
     def _set_default_credentials_all(self, kwargs, defaults):
         if self.key_filename and not defaults.get('pkey'):

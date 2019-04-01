@@ -344,7 +344,7 @@ class TerminalConnection(
         self.flush_recv()
 
         if curr.os.can_resize_pty:
-            self.send_cmd(curr.os.cmd.resize_pty(400, 80)).expect_prompt(
+            self.send_cmd(curr.os.cmd.resize_pty(curr.shell.cols, curr.shell.rows)).expect_prompt(
                 chain=True
             ).flush_recv()
 
@@ -691,6 +691,8 @@ class TerminalConnection(
                 command_loc = result.find(command)
                 if command_loc != -1:
                     result = result[command_loc + len(command) :].lstrip()
+                else:
+                    log.debug("<<< did not find command: \n" + command)
 
             return result
 

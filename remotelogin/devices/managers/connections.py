@@ -85,7 +85,6 @@ class OpenConnectionInstance:
         return self._user.expected_prompt
 
     def __open(self):
-        log.debug("Opening conn {} instance {}".format(self.conn_name, self.instance_name))
         self.__conn, self.conn_name, self._user, self.instance_name = \
             self.__manager._open(self._user, self.conn_name, self.instance_name,
                                  self.__other_conn_args, self.__tunnel, self.__interface)
