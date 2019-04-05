@@ -212,7 +212,7 @@ class ConnectionWithTerminal(Connection, abc.ABC):
         kwargs.setdefault('connect_timeout', term_tunnel.connect_timeout)
         terminal_shell, conn_string = self._get_shell_and_conn_string(parent=term_tunnel, **kwargs)
 
-        term_tunnel.send_cmd(conn_string)
+        term_tunnel.send_cmd(conn_string, force_flush=True)
         if len(terminal_shell.shell.ask_response_list):
 
             match_set = term_tunnel.expect_ask_response_list(

@@ -55,6 +55,13 @@ class WithSlots:
             ]
         )
 
+    def __str__(self):
+        d = self.as_dict()
+        for k, v in d.items():
+            if "password" in k:
+                d[k] = "password field"
+        return str(d)
+
 
 class UserInfo(WithSlots):
     __slots__ = (
