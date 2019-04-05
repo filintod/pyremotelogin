@@ -329,7 +329,8 @@ class TerminalConnection(
         self.data.new_sent(
             ">>> {} <<<\n".format(msg),
             data_stream=self.data_stream,
-            send_msg_format="\n{}",
+            send_msg_format=None,
+            host=self.host
         )
         self.find_login_info(terminal)
         curr = self.current
@@ -876,18 +877,12 @@ class TerminalConnection(
             record=record,
             hide=is_hidden,
             title=title,
+            host=self.host
         )
         self._last_cmd_was_hidden = is_hidden
         return self
 
     send_hidden = functools.partialmethod(send, is_hidden=True)
-
-    def log_recv(self):
-        log.debug(
-            "<<< Received: \n{}".format(
-                fdutils.strings.escape_string(self.data.get_last_recv())
-            )
-        )
 
     # TODO: be able to execute different callback per match
     def expect(

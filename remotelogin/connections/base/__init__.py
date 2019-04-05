@@ -111,7 +111,7 @@ class Connection:
     def __init_open_connection__(self, unbuffered, remove_empty_on_stream):
         self.lock = threading.Lock()
         self.stop_signal = threading.Event()
-        self.data = DataExchange(unbuffered, remove_empty_on_stream)
+        self.data = DataExchange(unbuffered, remove_empty_on_stream, host=str(self.transport))
 
     def __enter__(self):
         return self.open()

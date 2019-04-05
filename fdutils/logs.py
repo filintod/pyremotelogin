@@ -39,7 +39,7 @@ def init_logging(log_file_path='logging.log', logger_level=logging.DEBUG,
                  logging_to_console=True, logging_to_console_level=logging.ERROR,
                  file_format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                  console_format='%(name)-12s: %(levelname)-8s %(message)s',
-                 date_format='%m-%d %H:%M:%S'):
+                 date_format='%m-%d %H:%M:%S', max_message_length=0):
     """ Initializes the logging level and set it to output to file and console with the logging level of the file set by logger_level
 
     Args:
@@ -69,3 +69,22 @@ def init_logging(log_file_path='logging.log', logger_level=logging.DEBUG,
         formatter = logging.Formatter(console_format)
         console.setFormatter(formatter)
         logging.root.addHandler(console)
+
+    if max_message_length:
+        def set_logging_limit(l):
+            old_factory = l.getLogRecordFactory()
+
+            def record_factory(*args, **kwargs):
+                record = old_factory(*args, **kwargs)
+                len_record = len(record.msg)
+                if len_record > max_message_length:
+                    remaining = len_record - max_message_length
+                    record.msg = record.msg[:max_message_length] + \
+                                 "\n ---- message truncated (remaining chars {}) ----".format(remaining)
+                return record
+
+            l.setLogRecordFactory(record_factory)
+
+        set_logging_limit(logging)
+        if logging_to_console:
+            set_logging_limit(console)

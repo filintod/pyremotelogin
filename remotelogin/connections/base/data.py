@@ -1,8 +1,11 @@
 import time
 import datetime
 import io
+import logging
 
 from remotelogin.connections import settings
+
+log = logging.getLogger(__name__)
 
 control = """SOH	Start of heading, console interrupt
 STX	Start of text
@@ -42,10 +45,12 @@ DEL	Delete"""
 
 control_list = [v.split(maxsplit=1)[1] for v in control.splitlines()]
 
+DATA_TO_SEND = "Data Sent to {} >>>>: {}"
+DATA_RECEIVED = "Data Recv from {} <<<<: {}"
+
 
 class DataExchange:
-
-    def __init__(self, unbuffered=False, remove_empty_on_stream=False):
+    def __init__(self, unbuffered=False, remove_empty_on_stream=False, host=""):
         self._data_sent_timer_meta = []
         self._data_sent = []
         self._data_recv = []
@@ -54,6 +59,8 @@ class DataExchange:
         self._new_received = self.new_received
         self._unbuffered = unbuffered
         self._remove_empty_on_stream = remove_empty_on_stream
+        self._host = host
+        self._cur_host = host
 
     def _write(self, stream, data, force=False):
         if self._recording or force:
@@ -61,17 +68,37 @@ class DataExchange:
             if self._unbuffered:
                 stream.flush()
 
-    def new_sent(self, data, metadata=None, data_stream=None, record=True,  title='',
-                 send_msg_format='\n>>> sending "{title}" >>>{data}', echo_off=False, hide=False):
+    def new_sent(
+        self,
+        data,
+        metadata=None,
+        data_stream=None,
+        record=True,
+        title="",
+        send_msg_format='\n>>> sending "{title}" >>>{data}',
+        echo_off=False,
+        hide=False,
+        host="",
+    ):
         if record:
             self._data_sent_timer_meta.append((time.time(), metadata))
-            self._data_sent.append(data if not hide else settings.HIDDEN_DATA_MSG)
+            data = data if not hide else settings.HIDDEN_DATA_MSG
+            self._data_sent.append(data)
             self._stream_is_text = False
             self.new_received = self._new_received
 
-            if data_stream and data and (not self._remove_empty_on_stream or data.rstrip()):
+            self._cur_host = host
 
-                if isinstance(data_stream, io.TextIOBase):  # checks for StringIO and Text Files
+            if (
+                log.isEnabledFor(logging.DEBUG)
+                or data_stream
+                and data
+                and (not self._remove_empty_on_stream or data.rstrip())
+            ):
+
+                if not data_stream or isinstance(
+                    data_stream, io.TextIOBase
+                ):  # checks for StringIO and Text Files
                     stream_is_text = True
                 else:
                     stream_is_text = False
@@ -79,16 +106,38 @@ class DataExchange:
 
                 is_ctrl = False
 
-                if data != '\n' and len(data) == 1 and ord(data) < 36:
-                    data = control_list[ord(data)]
+                if len(data) == 1 and ord(data) < 36:
+                    data = "CTL[ " + control_list[ord(data)] + " ]"
                     is_ctrl = True
 
-                if echo_off or is_ctrl:
+                if self._data_recv:
+                    last_recv = self.get_last_recv()
+                    log.debug(
+                        DATA_RECEIVED.format(
+                            self._cur_host,
+                            "CTL[ " + control_list[ord(last_recv)] + " ]"
+                            if len(last_recv) == 1 and ord(last_recv) < 36
+                            else last_recv,
+                        )
+                    )
+                log.debug(DATA_TO_SEND.format(self._cur_host or self._host, data))
+
+                if send_msg_format is None:
+                    send_msg_format = "\n"
+
+                if (echo_off or is_ctrl) and not stream_is_text:
+
                     send_msg_format = send_msg_format.format(title=title, data=data)
-                    if not stream_is_text:
-                        send_msg_format = send_msg_format.encode(encoding=settings.ENCODE_ENCODING_TYPE,
-                                                                 errors=settings.ENCODE_ERROR_ARGUMENT_VALUE)
+                    send_msg_format = send_msg_format.encode(
+                        encoding=settings.ENCODE_ENCODING_TYPE,
+                        errors=settings.ENCODE_ERROR_ARGUMENT_VALUE,
+                    )
+
+                if data_stream:
                     self._write(data_stream, send_msg_format, True)
+
+
+
             self._data_recv.append(data_stream or io.StringIO())
 
         self._recording = record
@@ -97,16 +146,21 @@ class DataExchange:
         self._write(self._data_recv[-1], data)
 
     def new_received_bytes(self, data):
-        self._write(self._data_recv[-1], data.encode(encoding=settings.ENCODE_ENCODING_TYPE,
-                                                     errors=settings.ENCODE_ERROR_ARGUMENT_VALUE))
+        self._write(
+            self._data_recv[-1],
+            data.encode(
+                encoding=settings.ENCODE_ENCODING_TYPE,
+                errors=settings.ENCODE_ERROR_ARGUMENT_VALUE,
+            ),
+        )
 
     def get_last_recv(self):
         try:
             return self._data_recv[-1].getvalue()
         except (ValueError, AttributeError):
-            return 'A stream was recorded for this command'
+            return "A stream was recorded for this command"
         except IndexError:
-            return 'Nothing was recorded (nothing sent/received)'
+            return "Nothing was recorded (nothing sent/received)"
 
     def get_conversation_list(self, with_sent_time=False):
         conversation = []
@@ -114,22 +168,26 @@ class DataExchange:
             try:
                 send_recv = (s, self._data_recv[i].getvalue())
             except (ValueError, AttributeError):
-                send_recv = (s, 'a stream was recorded for this command')
+                send_recv = (s, "a stream was recorded for this command")
 
             if with_sent_time:
                 send_recv += self._data_sent_timer_meta[i]
             conversation.append(send_recv)
         return conversation
 
-    def get_timed_conversation_list(self, time_format='%Y-%m-%d %H:%M:%S'):
+    def get_timed_conversation_list(self, time_format="%Y-%m-%d %H:%M:%S"):
         conversation = self.get_conversation_list(True)
         timed_conversation = []
         for exchange in conversation:
             sent, received, ts, meta = exchange
-            timed_conversation.append(dict(time=datetime.datetime.fromtimestamp(ts).strftime(time_format),
-                                           meta=meta or '',
-                                           sent=sent,
-                                           received=received))
+            timed_conversation.append(
+                dict(
+                    time=datetime.datetime.fromtimestamp(ts).strftime(time_format),
+                    meta=meta or "",
+                    sent=sent,
+                    received=received,
+                )
+            )
         return timed_conversation
 
     def flush(self):
