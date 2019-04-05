@@ -528,10 +528,11 @@ class ConnectionInfo:
                 self.manager.users[user.name].expected_prompt = gral_prompt
 
             self.expected_prompt = gral_prompt
-            len_hops = len(self.tunnel.hops)
-            if len_hops:
-                for i, terminal in reversed(list(enumerate(instance._terminals[:-1]))):
-                    self.tunnel.hops[i]['user'].expected_prompt = terminal.shell.expected_prompt
+            if self.tunnel:
+                len_hops = len(self.tunnel.hops)
+                if len_hops:
+                    for i, terminal in reversed(list(enumerate(instance._terminals[:-1]))):
+                        self.tunnel.hops[i]['user'].expected_prompt = terminal.shell.expected_prompt
 
         self.data[instance_name].append(instance.data)
 
