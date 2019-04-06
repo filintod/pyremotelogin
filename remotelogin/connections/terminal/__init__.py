@@ -535,7 +535,7 @@ class TerminalConnection(
         """
 
         # send a new line
-        self.send_line()
+        self.send_line(force_flush=True, flush_timeout=settings.FLUSH_RECV_TIMEOUT * 2)
         data_received, prompt_timer_expired, prompt_found = self._find_prompt(
             terminal, terminal.shell.expected_prompt
         )
@@ -741,9 +741,9 @@ class TerminalConnection(
 
         return self
 
-    def send_cmd(self, cmd, flush=True, force_flush=False, **send_kwargs):
+    def send_cmd(self, cmd, flush=True, force_flush=False, flush_timeout=settings.FLUSH_RECV_TIMEOUT, **send_kwargs):
         if flush and self.last_cmd_sent or force_flush:
-            self.flush_recv()
+            self.flush_recv(timeout=flush_timeout)
         return self.send(cmd, True, **send_kwargs)
 
     send_hidden_cmd = functools.partialmethod(send_cmd, is_hidden=True)
