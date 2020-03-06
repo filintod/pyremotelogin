@@ -347,6 +347,8 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
 
     def _put_file(self, local_file, remote_path, **put_kwargs):
         with self._get_ftp_client(**put_kwargs) as ftp:
+            if hasattr(local_file, "read"):
+                return ftp.putfo(local_file, remote_path)
             return ftp.put(local_file, remote_path)
 
     def _get_file(self, remote_file, local_path, keep_channel_open=False, **get_kwargs):
