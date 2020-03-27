@@ -1,4 +1,5 @@
 import contextlib
+import io
 import logging
 import select
 import time
@@ -156,6 +157,11 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
     def _try_cryptography_direct_pkey(self, filepath, filekey):
         from cryptography.hazmat.backends import default_backend
         from cryptography.hazmat.primitives import serialization
+        if hasattr(filepath, "read"):
+            filepath.seek(0)
+            return serialization.load_pem_private_key(filepath.read(),
+                                                      password=filekey.encode(),
+                                                      backend=default_backend())
         with open(filepath, "rb") as key_file:
             return serialization.load_pem_private_key(key_file.read(),
                                                       password=filekey.encode(),
@@ -165,13 +171,17 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         self.transport.set_missing_host_key_policy(self.key_policy)
         defaults = {}
 
-        if not self.key_filename:
+        if self.key_filename:
             defaults['allow_agent'] = False
             defaults['look_for_keys'] = False
 
-        else:
             try:
-                defaults['pkey'] = paramiko.RSAKey.from_private_key_file(self.key_filename, password=self.key_password)
+                if isinstance(self.key_filename, io.IOBase):
+                    self.key_filename.seek(0)
+                    func = paramiko.RSAKey.from_private_key
+                else:
+                    func = paramiko.RSAKey.from_private_key_file
+                defaults['pkey'] = func(self.key_filename, password=self.key_password)
 
             except paramiko.ssh_exception.SSHException:
                 if self.key_password:
@@ -347,7 +357,7 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
 
     def _put_file(self, local_file, remote_path, **put_kwargs):
         with self._get_ftp_client(**put_kwargs) as ftp:
-            if hasattr(local_file, "read"):
+            if isinstance(local_file, io.IOBase):
                 return ftp.putfo(local_file, remote_path)
             return ftp.put(local_file, remote_path)
 
