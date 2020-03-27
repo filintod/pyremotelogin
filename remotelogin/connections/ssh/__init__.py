@@ -159,7 +159,7 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
         from cryptography.hazmat.primitives import serialization
         if hasattr(filepath, "read"):
             filepath.seek(0)
-            return serialization.load_pem_private_key(filepath.read(),
+            return serialization.load_pem_private_key(filepath.read().encode(),
                                                       password=filekey.encode(),
                                                       backend=default_backend())
         with open(filepath, "rb") as key_file:
