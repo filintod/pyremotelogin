@@ -116,7 +116,8 @@ class B64DecoderWriter:
     def write(self, data):
         if not data:
             return
-
+        if isinstance(data, str):
+            data = data.encode()
         rn = data.rfind(b'\n')
 
         if rn >= 0:
