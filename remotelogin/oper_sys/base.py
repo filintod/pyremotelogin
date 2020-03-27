@@ -51,7 +51,7 @@ class OSCommands:
 def set_locals(klass, locs, OS_KWARGS_TYPES):
     for l in [l for l in locs if not hasattr(klass, l)]:
         if l in OS_KWARGS_TYPES and locs[l] is None:
-        setattr(klass, l, locs[l])
+            setattr(klass, l, locs[l])
 
 
 class OSBase:
