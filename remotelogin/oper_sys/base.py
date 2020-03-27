@@ -48,8 +48,9 @@ class OSCommands:
         pass
 
 
-def set_locals(klass, locs):
+def set_locals(klass, locs, OS_KWARGS_TYPES):
     for l in [l for l in locs if not hasattr(klass, l)]:
+        if l in OS_KWARGS_TYPES and locs[l] is None:
         setattr(klass, l, locs[l])
 
 
@@ -88,12 +89,14 @@ class OSBase:
         return os_props, kwargs
 
     OS_KWARGS = 'can_resize_pty', 'can_change_prompt', 'can_disable_history', 'reset_prompt_on_exit', 'default_prompt'
+    OS_KWARGS_TYPES = dict(can_resize_pty=bool, can_change_promp=bool, can_disable_history=bool,
+                           reset_prompt_on_exit=bool)
 
     # NOTE: if we change/add kwargs we need to synchronize arguments in DeviceBase.init_os method
     def __init__(self, can_change_prompt=None, can_resize_pty=None, reset_prompt_on_exit=None, default_prompt=None,
                  can_disable_history=None, shell_app=None, telnet_app=None, ssh_app=None):
         # this should be the first method to be called DON"T MOVE or we might have other locals
-        set_locals(self, locals())
+        set_locals(self, locals(), OSBase.OS_KWARGS_TYPES)
 
         if reset_prompt_on_exit and not default_prompt:
             raise AttributeError('If the OS will do reset_prompt_on_exit you need to define the default_prompt')

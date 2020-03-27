@@ -117,16 +117,17 @@ class B64DecoderWriter:
         if not data:
             return
 
-        rn = data.rfind('\n')
+        rn = data.rfind(b'\n')
 
         if rn >= 0:
+            cmd = self.cmd.encode()
             buff_data, new_data = data[:rn], data[rn+1:]
             self.buffer.append(buff_data)
-            data_to_decode = ''.join(self.buffer)
+            data_to_decode = b''.join(self.buffer)
             if not self.cmd_removed:
-                cmd_pos = data_to_decode.find(self.cmd)
+                cmd_pos = data_to_decode.find(cmd)
                 if cmd_pos >= 0:
-                    data_to_decode = data_to_decode[len(self.cmd):].lstrip()
+                    data_to_decode = data_to_decode[len(cmd):].lstrip()
                 self.cmd_removed = True
             if data_to_decode:
                 self.output_io.write(binascii.a2b_base64(data_to_decode))
@@ -136,7 +137,7 @@ class B64DecoderWriter:
             self.buffer.append(data)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.output_io.write(binascii.a2b_base64(''.join(self.buffer)))
+        self.output_io.write(binascii.a2b_base64(b''.join(self.buffer)))
 
 
 # TODO: add multiple file upload/download sequential/parallel(threaded or coroutines)
