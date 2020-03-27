@@ -4,7 +4,7 @@ import threading
 import weakref
 
 from sqlalchemy import orm, Column, Integer, String, Boolean, TypeDecorator, Binary, UniqueConstraint
-from sqlalchemy.ext.hybrid import hybrid_propertycan_change_prompt
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from remotelogin import oper_sys
 from remotelogin.connections import settings
