@@ -118,17 +118,16 @@ class B64DecoderWriter:
             return
         if isinstance(data, str):
             data = data.encode()
-        rn = data.rfind(b'\n')
+        rn = data.rfind('\n')
 
         if rn >= 0:
-            cmd = self.cmd.encode()
             buff_data, new_data = data[:rn], data[rn+1:]
             self.buffer.append(buff_data)
-            data_to_decode = b''.join(self.buffer)
+            data_to_decode = ''.join(self.buffer)
             if not self.cmd_removed:
-                cmd_pos = data_to_decode.find(cmd)
+                cmd_pos = data_to_decode.find(self.cmd)
                 if cmd_pos >= 0:
-                    data_to_decode = data_to_decode[len(cmd):].lstrip()
+                    data_to_decode = data_to_decode[len(self.cmd):].lstrip()
                 self.cmd_removed = True
             if data_to_decode:
                 self.output_io.write(binascii.a2b_base64(data_to_decode))

@@ -1,6 +1,7 @@
 import contextlib
 import io
 import logging
+import os
 import select
 import time
 
@@ -197,18 +198,24 @@ class SshConnection(term.IPConnectionWithTerminal, mixins.CanExecuteCommands, mi
                 try:
                     defaults['pkey'].load_certificate(self.key_cert)
                 except Exception:
-                    # hack to work around paramiko lack of support for openssl signed public key
-                    #   until I submit a pr on paramiko
-                    with open(self.key_cert) as f:
-                        ptype, blob = f.read().split(None, 2)
-                        if ptype.endswith("@openssh.com"):
-                            raise
-
-                        from paramiko import message, pkey
-                        from base64 import decodebytes
-                        defaults['pkey'].public_blob = pkey.PublicBlob(ptype, decodebytes(blob.encode()))
+                    self.get_cert_blob(defaults)
 
         self._set_default_credentials_all(kwargs, defaults)
+
+    def get_cert_blob(self, defaults):
+        """ hack to work around paramiko lack of support for openssl signed public key
+            until I submit a pr on paramiko """
+        if os.path.isfile(self.key_cert):
+            with open(self.key_cert) as f:
+                cert_data = f.read()
+        else:
+            cert_data = self.key_cert
+        ptype, blob = cert_data.split(None, 2)
+        if ptype.endswith("@openssh.com"):
+            raise
+        from paramiko import pkey
+        from base64 import decodebytes
+        defaults['pkey'].public_blob = pkey.PublicBlob(ptype, decodebytes(blob.encode()))
 
     def _open_transport(self, **kwargs):
         """ Opens an SSH connection.
