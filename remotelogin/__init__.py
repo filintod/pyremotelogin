@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 try:
     from .devices import settings
 except ModuleNotFoundError:
-    log.warning("Problems importing Device Settings. Disregard is not using devices..")
+    log.warning("Problems importing Device Settings. Disregard is not using devices...")
 from .connections import settings
 
 from fdutils.config import load_default, environment_settings
