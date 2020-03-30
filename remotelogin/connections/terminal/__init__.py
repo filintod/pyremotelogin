@@ -737,7 +737,7 @@ class TerminalConnection(
             return self.flush_recv(False)
 
         elif remaining_time > 0:
-            time.sleep(0.01)
+            time.sleep(settings.FLUSH_RECV_TIMEOUT/ 5.)
             return self.flush_recv(False, timeout=remaining_time)
 
         return self
