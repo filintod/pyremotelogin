@@ -33,7 +33,6 @@ setup(
     version=info['__version__'],
     packages=find_packages(exclude=()),
     url=info['__url__'],
-    license=['__license__'],
     author=info['__author__'],
     author_email=info['__email__'],
     description=info['__description__'],
